@@ -23,3 +23,11 @@ MyPathTracer/
 │   │   └── BSDF.hpp        // 具体材质实现 (Diffuse, Specular, Glass...)
 │   └── renderer/           // 渲染管线
 │       └── integrator.hpp  // 路径追踪核心算法 (Li 函数)
+
+所有的定义前面都要有英文编写的接口介绍。
+
+所有的文件和文件夹，如果不是某种简写（如 AABB），都要小写。
+
+所有的自定义类型都要遵照 Camel Case。所有的自定义函数都要遵照 Snake Case。
+
+这份文件应该是编写整个项目的核心指导思想。
