@@ -6,32 +6,37 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 # --- 1. 自动下载并配置 GLM (FetchContent) ---
 include(FetchContent)
-message(STATUS "Fetching GLM...")
 FetchContent_Declare(
     glm
     GIT_REPOSITORY https://github.com/g-truc/glm.git
-    GIT_TAG        0.9.9.8 # 指定稳定版本
+    GIT_TAG        master
 )
 FetchContent_MakeAvailable(glm)
 
 # --- 2. 配置包含目录 ---
-# 包含 src 目录，方便内部 include
 include_directories(${CMAKE_SOURCE_DIR}/src)
-# 包含 external 目录，方便引用 stb_image_write.h
 include_directories(${CMAKE_SOURCE_DIR}/external)
 
-# --- 3. 添加源文件 ---
-# 这一步目前只有 main.cpp，后续加文件可以在这里追加，或者使用 file(GLOB...)
+# --- 3. 配置输出路径 (强制所有配置都输出到 bin) ---
+set(OUTPUT_DIR ${CMAKE_SOURCE_DIR}/bin)
+set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${OUTPUT_DIR})
+set(CMAKE_RUNTIME_OUTPUT_DIRECTORY_DEBUG ${OUTPUT_DIR})
+set(CMAKE_RUNTIME_OUTPUT_DIRECTORY_RELEASE ${OUTPUT_DIR})
+
+# --- 4. 添加源文件 ---
 set(SOURCES
     src/main.cpp
 )
 
-# --- 4. 生成可执行文件 ---
+# --- 5. 生成可执行文件 ---
 add_executable(MyPathTracer ${SOURCES})
 
-# --- 5. 链接库 ---
-# 链接 GLM
+# --- 6. 链接库与编译选项 ---
 target_link_libraries(MyPathTracer PRIVATE glm::glm)
 
-# 设置输出目录为 bin 文件夹，防止污染根目录
-set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_SOURCE_DIR}/bin)
+if(MSVC)
+    # 解决中文注释编码警告 (C4819)
+    target_compile_options(MyPathTracer PRIVATE /utf-8)
+    # 解决 sprintf 不安全警告 (C4996)
+    target_compile_definitions(MyPathTracer PRIVATE _CRT_SECURE_NO_WARNINGS)
+endif()

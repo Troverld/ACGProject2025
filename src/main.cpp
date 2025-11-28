@@ -2,66 +2,85 @@
 #include <vector>
 #include <string>
 
-// --- External Libs ---
-// GLM: 数学库
+// External
 #include <glm/glm.hpp>
-#include <glm/vec3.hpp>
-
-// STB: 图片输出
-// 注意：必须在一个 .cpp 文件中定义 STB_IMAGE_WRITE_IMPLEMENTATION
 #define STB_IMAGE_WRITE_IMPLEMENTATION
 #include "stb_image_write.h"
 
+// Project Headers
+#include "Core/Utils.hpp"
+#include "Core/Ray.hpp"
+#include "Scene/Sphere.hpp"
+#include "Scene/Camera.hpp"
+
+// 计算光线颜色
+// 如果撞到球，返回法线颜色；如果没撞到，返回背景色（天空蓝）
+glm::vec3 ray_color(const Ray& r, const Object& world) {
+    HitRecord rec;
+    // t_min 设为 0.001 避免浮点误差导致的"自遮挡"（Shadow Acne）
+    if (world.intersect(r, 0.001f, Infinity, rec)) {
+        // 将法线 [-1, 1] 映射到 [0, 1] 作为颜色显示
+        return 0.5f * (rec.normal + glm::vec3(1.0f));
+    }
+
+    // 背景：线性渐变
+    // y 方向归一化到 0-1
+    glm::vec3 unit_direction = glm::normalize(r.direction());
+    float t = 0.5f * (unit_direction.y + 1.0f);
+    // 混合 白色(1,1,1) 和 蓝色(0.5, 0.7, 1.0)
+    return (1.0f - t) * glm::vec3(1.0f, 1.0f, 1.0f) + t * glm::vec3(0.5f, 0.7f, 1.0f);
+}
+
 int main() {
-    // 1. 设置图像参数
+    // 1. 图像参数
+    const float aspect_ratio = 16.0f / 9.0f;
     const int width = 800;
-    const int height = 600;
-    const int channels = 3; // RGB
+    const int height = static_cast<int>(width / aspect_ratio);
+    const int channels = 3;
 
-    std::cout << "Rendering a " << width << "x" << height << " image..." << std::endl;
+    std::cout << "Rendering " << width << "x" << height << "..." << std::endl;
 
-    // 2. 验证 GLM 是否工作
-    glm::vec3 test_vec(1.0f, 2.0f, 3.0f);
-    glm::vec3 test_result = test_vec * 2.0f;
-    std::cout << "GLM Test: (" << test_result.x << ", " << test_result.y << ", " << test_result.z << ")" << std::endl;
-    // 预期输出: (2, 4, 6)
+    // 2. 场景构建
+    // 创建一个球体：位置(0,0,-1)，半径0.5
+    // 注意相机默认看向 -Z 方向
+    Sphere sphere(glm::vec3(0.0f, 0.0f, -1.0f), 0.5f);
 
-    // 3. 分配像素 buffer (unsigned char: 0-255)
-    // 大小 = 宽 * 高 * 通道数
+    // 3. 相机构建
+    glm::vec3 lookfrom(0.0f, 0.0f, 1.0f); // 相机在 Z=1
+    glm::vec3 lookat(0.0f, 0.0f, -1.0f);  // 看向球体
+    glm::vec3 vup(0.0f, 1.0f, 0.0f);
+    float fov = 90.0f;
+    Camera cam(lookfrom, lookat, vup, fov, aspect_ratio);
+
+    // 4. 渲染循环
     std::vector<unsigned char> image(width * height * channels);
 
-    // 4. 填充像素 (简单的 UV 渐变)
     for (int j = 0; j < height; ++j) {
+        // 打印进度条
+        if (j % 50 == 0) std::cout << "Scanning line " << j << std::endl;
+
         for (int i = 0; i < width; ++i) {
-            // 计算像素在数组中的索引
-            // 图像原点通常在左上角，但在图形学中有时习惯左下角。
-            // 这里我们按照 stbi 的习惯，行优先，从上到下。
+            // UV 坐标 (0,0 在左下角)
+            float u = float(i) / (width - 1);
+            float v = float(height - 1 - j) / (height - 1); // 注意：stb 是从上往下写，所以 v 要反转
+
+            // 发射光线
+            Ray r = cam.get_ray(u, v);
+            
+            // 计算颜色
+            glm::vec3 pixel_color = ray_color(r, sphere);
+
+            // 写入 Buffer (Gamma 矫正暂略，直接写线性值)
             int index = (j * width + i) * channels;
-
-            // 生成颜色 (0.0 - 1.0)
-            float r = float(i) / (width - 1);
-            float g = float(j) / (height - 1);
-            float b = 0.25f;
-
-            // 转换到 0-255
-            image[index + 0] = static_cast<unsigned char>(255.99f * r);
-            image[index + 1] = static_cast<unsigned char>(255.99f * g);
-            image[index + 2] = static_cast<unsigned char>(255.99f * b);
+            image[index + 0] = static_cast<unsigned char>(255.999f * pixel_color.r);
+            image[index + 1] = static_cast<unsigned char>(255.999f * pixel_color.g);
+            image[index + 2] = static_cast<unsigned char>(255.999f * pixel_color.b);
         }
     }
 
-    // 5. 保存图片
-    // stbi_write_png(文件名, 宽, 高, 通道数, 数据指针, 跨度(每行的字节数))
-    // 跨度 = width * channels
-    const std::string filename = "test_output.png";
-    int result = stbi_write_png(filename.c_str(), width, height, channels, image.data(), width * channels);
-
-    if (result) {
-        std::cout << "Image saved successfully to bin/" << filename << std::endl;
-    } else {
-        std::cerr << "Failed to save image!" << std::endl;
-        return -1;
-    }
+    // 5. 保存
+    stbi_write_png("phase2_output.png", width, height, channels, image.data(), width * channels);
+    std::cout << "Done! Saved to phase2_output.png" << std::endl;
 
     return 0;
 }
