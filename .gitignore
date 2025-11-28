@@ -1,0 +1,47 @@
+# --- Build & Compiled Files ---
+build/
+cmake-build-debug/
+cmake-build-release/
+out/
+bin/
+*.exe
+*.o
+*.obj
+*.lib
+*.a
+*.dll
+*.dylib
+*.so
+
+# --- CMake Generated ---
+CMakeCache.txt
+CMakeFiles/
+cmake_install.cmake
+Makefile
+*.cmake
+
+# --- IDE & OS Settings ---
+.vscode/
+.idea/
+.vs/
+*.swp
+*.swo
+.DS_Store
+Thumbs.db
+
+# --- Python (for pack_code.py) ---
+__pycache__/
+*.pyc
+
+# --- Output Artifacts ---
+# 忽略渲染出来的图片，避免仓库膨胀
+*.png
+*.jpg
+*.jpeg
+*.ppm
+*.bmp
+*.tga
+
+# --- AI Context ---
+# 忽略脚本生成的代码汇总文件
+project_code_context.txt

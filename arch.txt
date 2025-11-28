@@ -1,0 +1,25 @@
+MyPathTracer/
+├── CMakeLists.txt          // 构建系统
+├── external/               // 第三方库
+│   ├── stb_image_write.h   // 用于输出图片
+│   └── tiny_obj_loader.h   // (可选) 用于加载外部模型
+├── src/
+│   ├── main.cpp            // 程序入口
+│   ├── Core/               // 核心数学与基础数据结构
+│   │   ├── Ray.hpp         // 光线定义
+│   │   └── Utils.hpp       // 随机数生成、常量定义
+│   ├── Scene/              // 场景定义
+│   │   ├── Scene.hpp       // 管理所有物体和灯光
+│   │   ├── Object.hpp      // 物体基类
+│   │   ├── Sphere.hpp      // 球体 (基础几何)
+│   │   ├── Triangle.hpp    // 三角形 (网格几何)
+│   │   ├── Mesh.hpp        // 三角形网格 (加载 .obj)
+│   │   └── Camera.hpp      // 相机模型 (负责生成光线、抗锯齿)
+│   ├── Accel/              // 加速结构
+│   │   ├── AABB.hpp        // 轴对齐包围盒
+│   │   └── BVH.hpp         // 核心：BVH 构建与遍历
+│   ├── Material/           // 材质系统
+│   │   ├── Material.hpp    // 材质基类
+│   │   └── BSDF.hpp        // 具体材质实现 (Diffuse, Specular, Glass...)
+│   └── Renderer/           // 渲染管线
+│       └── Integrator.hpp  // 路径追踪核心算法 (Li 函数)
