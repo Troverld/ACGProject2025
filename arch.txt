@@ -1,3 +1,55 @@
+任务如下：
+
+
+### Topic 1: Image Rendering
+
+In this section, you are required to implement a renderer, which can be either hardware-based (GPU) or software-based (CPU). The goal is to produce a static image. Note that a path-tracing renderer is required, as rasterization-based renderers will not be accepted. Also, there is a framework that you can choose to use it or not (github.com/LazyJazzDev/Sparks). The functionalities you need to implement are as follows:
+
+**Core Requirements:**
+
+*   **Base**: Implement a path tracing algorithm that correctly handles **diffuse** and **specular** materials. (basic)
+*   **Scene creation**: Build a custom scene with aesthetic considerations, using geometry that you create from scratch or find online (ensure the source is credited). (basic, tidiness and attractiveness 1pt)
+*   **Acceleration structure**: Implement an acceleration structure such as BVH (Bounding Volume Hierarchy). This is not required for hardware-based renderers, as the acceleration structure is built-in in that case. (basic, Surface Area Heuristic or another advanced algorithm 2pts)
+
+**Advanced Features (Optional):**
+
+*   **Material:** Create a (non-trivial) custom material. Options include:
+    *   Transmissive material (basic)
+    *   Principled BSDF (2pts)
+    *   Multi-layer material (2pts)
+    *   Rendering of fur, hair, skin, etc. (2pts)
+
+*   **Texture:** Create your own (non-trivial) texture with proper texture mapping. Options include:
+    *   Color texture (basic)
+    *   Normal map, height map, attribute map, or any functional texture mapping (1pt for each, up to 2pts)
+    *   Implement an adaptive mipmap algorithm (2pts)
+
+*   **Importance Sampling:** Use more advanced sampling algorithms for path tracing. (Importance sampling with Russian Roulette, multiple importance sampling 2pts)
+
+*   **Volumetric Rendering:** Options include:
+    *   Subsurface scattering (2pts)
+    *   Homogeneous volume rendering (1pt)
+    *   Inhomogeneous volume rendering (1pt)
+    *   Channel-independent subsurface scattering (1pt)
+    *   Volumetric emission (1pt)
+    *   Volumetric alpha shadow (2pts)
+
+*   **Special Visual Effects:** Options include:
+    *   Motion blur, depth of field (basic)
+    *   Alpha shadow (basic)
+    *   Cartoon style rendering (2pts)
+    *   Chromatic dispersion (2pts)
+
+*   **Lighting:** Options include:
+    *   Point light and area light (basic)
+    *   Environment lighting with HDR, such as skybox (2pts)
+
+*   **Anti-aliasing:** Implement an anti-aliasing algorithm (basic)
+
+*   **Simulation-based content creation:** Up to 2pts
+
+目前的代码结构规划如下（可能改动）：
+
 MyPathTracer/
 ├── CMakeLists.txt          // 构建系统
 ├── external/               // 第三方库
@@ -22,7 +74,9 @@ MyPathTracer/
 │   │   ├── material.hpp    // 材质基类
 │   │   └── BSDF.hpp        // 具体材质实现 (Diffuse, Specular, Glass...)
 │   └── renderer/           // 渲染管线
-│       └── integrator.hpp  // 路径追踪核心算法 (Li 函数)
+│       └── integrator.hpp  // 路径追踪核心算法
+
+目前的约定如下：
 
 所有的定义前面都要有英文编写的接口介绍。
 

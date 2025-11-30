@@ -20,6 +20,9 @@ public:
         // Generate a random direction for diffuse bounce
         glm::vec3 scatter_direction = rec.normal + random_unit_vector();
 
+        // Note: For true Lambertian, we should sample cosine-weighted hemisphere.
+        // Current implementation is "Random in Unit Sphere" + Normal (approximate).
+
         // Catch degenerate scatter direction (if random vector is exactly opposite to normal)
         if (near_zero(scatter_direction))
             scatter_direction = rec.normal;
@@ -27,6 +30,13 @@ public:
         scattered = Ray(rec.p, scatter_direction);
         attenuation = albedo;
         return true;
+    }
+
+    
+    // Future-proofing: Lambertian PDF is cos(theta) / PI
+    virtual float scattering_pdf(const Ray& r_in, const HitRecord& rec, const Ray& scattered) const override {
+        float cosine = glm::dot(rec.normal, glm::normalize(scattered.direction()));
+        return cosine < 0 ? 0 : cosine / PI;
     }
 
 public:

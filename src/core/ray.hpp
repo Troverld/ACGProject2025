@@ -2,8 +2,9 @@
 #include <glm/glm.hpp>
 
 /**
- * @brief Represents a ray in 3D space defined by an origin and a direction. If constructed with a direction vector that is not normalized, it will be normalized internally.
+ * @brief Represents a ray in 3D space defined by an origin and a direction.
  * Equation: P(t) = origin + t * direction
+ * If constructed with a direction vector that is not normalized, it will be normalized internally.
  */
 class Ray {
 public:
@@ -17,20 +18,18 @@ public:
      * 
      * @param origin The starting point of the ray.
      * @param direction The direction vector of the ray (will be normalized).
+     * @param time The time at which this ray exists (for motion blur).
      */
-    Ray(const glm::vec3& origin, const glm::vec3& direction)
-        : orig(origin), dir(glm::normalize(direction)) 
-    {}
+    Ray(const glm::vec3& origin, const glm::vec3& direction, float time = 0.0)
+        : orig(origin), tm(time){
+        dir = glm::normalize(direction);
+        inv_dir = 1.0f / dir; 
+    }
 
-    /**
-     * @return glm::vec3 The origin of the ray.
-     */
     glm::vec3 origin() const { return orig; }
-
-    /**
-     * @return glm::vec3 The normalized direction of the ray.
-     */
     glm::vec3 direction() const { return dir; }
+    glm::vec3 inv_direction() const { return inv_dir; }
+    float time() const { return tm; }
 
     /**
      * @brief Calculates the point along the ray at parameter t.
@@ -45,4 +44,6 @@ public:
 public:
     glm::vec3 orig;
     glm::vec3 dir;
+    glm::vec3 inv_dir; // Cached inverse direction
+    float tm;
 };

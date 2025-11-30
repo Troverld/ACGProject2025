@@ -74,8 +74,8 @@ def pack_project():
                             # 写入分隔符和文件路径，方便 AI 识别
                             outfile.write("=" * 80 + "\n")
                             outfile.write(f"File: {rel_path}\n")
-                            outfile.write("=" * 80 + "\n")
-                            outfile.write(content + "\n\n")
+                            outfile.write("=" * 80 + "\n\n")
+                            outfile.write("```\n" + content + "\n```\n\n")
                             
                     except UnicodeDecodeError:
                         print(f"Warning: Could not decode {rel_path}, skipping.")

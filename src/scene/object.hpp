@@ -2,6 +2,7 @@
 
 #include "../core/ray.hpp"
 #include <glm/glm.hpp>
+#include "../accel/AABB.hpp"
 #include <memory>
 
 // Forward declaration to avoid circular dependency
@@ -13,9 +14,11 @@ class Material;
 struct HitRecord {
     glm::vec3 p;                  ///< Intersection point in world space.
     glm::vec3 normal;             ///< Surface normal at intersection.
-    std::shared_ptr<Material> mat_ptr; ///< Pointer to the material of the hit object.
+    Material* mat_ptr;            ///< Pointer to the material of the hit object. Use a raw pointer instead of shared_ptr to reduce overhead.
     float t;                      ///< Ray parameter t where intersection occurred.
     bool front_face;              ///< True if ray hit the front face, false if back face.
+    float u;                      ///< Texture coordinate U [0,1].
+    float v;                      ///< Texture coordinate V [0,1].
 
     /**
      * @brief Sets the hit record normal and front_face flag based on ray direction.
@@ -48,4 +51,15 @@ public:
      * @return false Otherwise.
      */
     virtual bool intersect(const Ray& r, float t_min, float t_max, HitRecord& rec) const = 0;
+
+    /**
+     * @brief Compute the bounding box of the object.
+     * Essential for BVH construction.
+     * 
+     * @param time0 Start time for motion blur interval.
+     * @param time1 End time for motion blur interval.
+     * @param output_box The calculated AABB.
+     * @return true If the object has a bounding box (infinite planes might not).
+     */
+    virtual bool bounding_box(float time0, float time1, AABB& output_box) const = 0;
 };

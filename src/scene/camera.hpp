@@ -12,13 +12,27 @@ public:
     /**
      * @brief Construct a new Camera.
      * 
-     * @param lookfrom Camera position.
+     * @param lookfrom Position of the camera.
      * @param lookat Point the camera is looking at.
-     * @param vup Vector pointing 'up' for the camera (usually 0,1,0).
-     * @param vfov Vertical field of view in degrees.
-     * @param aspect_ratio Width / Height.
+     * @param vup Up vector.
+     * @param vfov Vertical field of view (degrees).
+     * @param aspect_ratio Screen width / height.
+     * @param aperture Aperture diameter (for depth of field). 0 = Pinhole.
+     * @param focus_dist Distance to focus plane.
+     * @param t0 Shutter open time.
+     * @param t1 Shutter close time.
      */
-    Camera(glm::vec3 lookfrom, glm::vec3 lookat, glm::vec3 vup, float vfov, float aspect_ratio) {
+    Camera(
+        glm::vec3 lookfrom, 
+        glm::vec3 lookat, 
+        glm::vec3 vup, 
+        float vfov, 
+        float aspect_ratio,
+        float aperture = 0.0f,
+        float focus_dist = 10.0f,
+        float t0 = 0.0,
+        float t1 = 0.0
+    ) : time0(t0), time1(t1) {
         float theta = glm::radians(vfov);
         float h = tan(theta / 2);
         float viewport_height = 2.0f * h;
@@ -29,20 +43,29 @@ public:
         v = glm::cross(w, u);
 
         origin = lookfrom;
-        horizontal = viewport_width * u;
-        vertical = viewport_height * v;
-        lower_left_corner = origin - horizontal / 2.0f - vertical / 2.0f - w;
+        horizontal = focus_dist * viewport_width * u;
+        vertical = focus_dist * viewport_height * v;
+        lower_left_corner = origin - horizontal / 2.0f - vertical / 2.0f - focus_dist * w;
+
+        lens_radius = aperture / 2.0f;
     }
 
     /**
-     * @brief Generate a ray for a specific pixel coordinate.
+     * @brief Full featured camera with Defocus Blur and Motion Blur support.
      * 
      * @param s Horizontal screen coordinate (0-1).
      * @param t Vertical screen coordinate (0-1).
      * @return Ray The ray starting from camera origin passing through (s,t).
      */
     Ray get_ray(float s, float t) const {
-        return Ray(origin, lower_left_corner + s * horizontal + t * vertical - origin);
+        glm::vec3 rd = lens_radius * random_in_unit_disk();
+        glm::vec3 offset = u * rd.x + v * rd.y;
+
+        return Ray(
+            origin + offset,
+            lower_left_corner + s * horizontal + t * vertical - origin - offset,
+            random_float(time0, time1)
+        );
     }
 
 private:
@@ -51,4 +74,6 @@ private:
     glm::vec3 horizontal;
     glm::vec3 vertical;
     glm::vec3 u, v, w;
+    float lens_radius;
+    float time0, time1; // Shutter open/close times
 };

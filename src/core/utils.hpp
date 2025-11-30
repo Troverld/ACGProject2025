@@ -11,7 +11,7 @@
 #include <glm/gtc/constants.hpp>
 
 /**
- * @brief Global constants used throughout the renderer.
+ * @brief Global constants used throughout the renderer. No 'magic numbers' shall appear throughout the project, all of them shall be explicitly defined here.
  */
 const float Infinity = std::numeric_limits<float>::infinity();
 const float PI = glm::pi<float>();
@@ -61,6 +61,20 @@ inline glm::vec3 random_in_unit_sphere() {
     while (true) {
         glm::vec3 p = random_vec3(-1, 1);
         if (glm::dot(p, p) >= 1) continue;
+        return p;
+    }
+}
+
+/**
+ * @brief Generates a random vector inside a unit disk (with z-dim be zero).
+ * Used for motion blurr.
+ * 
+ * @return glm::vec3 A vector with length < 1 and z = 0.
+ */
+inline glm::vec3 random_in_unit_disk() {
+    while (true) {
+        glm::vec3 p = glm::vec3(random_float(-1,1), random_float(-1,1), 0);
+        if (glm::dot(p,p) >= 1) continue;
         return p;
     }
 }
