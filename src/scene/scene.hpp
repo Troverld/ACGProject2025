@@ -1,6 +1,7 @@
 #pragma once
 
 #include "object.hpp"
+#include "light.hpp"
 #include <vector>
 #include <memory>
 
@@ -14,15 +15,26 @@ public:
     Scene(std::shared_ptr<Object> object) { add(object); }
 
     /**
-     * @brief Clear all objects from the scene.
+     * @brief Clear all objects and lights from the scene.
      */
-    void clear() { objects.clear(); }
+    void clear() { 
+        objects.clear(); 
+        lights.clear();
+    }
 
     /**
-     * @brief Add an object to the scene.
-     * @param object Shared pointer to the object.
+     * @brief The Magic of Automatic Promotion.
+     * When an object is added, we check its material. 
+     * If it glows, we create a Light entity for it.
      */
-    void add(std::shared_ptr<Object> object) { objects.push_back(object); }
+    void add(std::shared_ptr<Object> object) {
+        objects.push_back(object);
+        
+        // Check if the object has a material and if it is emissive
+        if (object->get_material() && object->get_material()->is_emissive()) {
+            lights.push_back(std::make_shared<DiffuseAreaLight>(object));
+        }
+    }
 
     /**
      * @brief Intersects a ray with all objects in the scene.
@@ -77,7 +89,10 @@ public:
         // Linear interpolation: (1-t)*White + t*Blue
         return (1.0f - t) * glm::vec3(1.0f, 1.0f, 1.0f) + t * glm::vec3(0.5f, 0.7f, 1.0f);
     }
+    // Stub implementation for Scene itself acting as an object
+    virtual Material* get_material() const override { return nullptr; }
 
 public:
     std::vector<std::shared_ptr<Object>> objects;
+    std::vector<std::shared_ptr<Light>> lights;
 };

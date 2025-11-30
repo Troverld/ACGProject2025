@@ -45,6 +45,20 @@ inline float random_float(float min, float max) {
 }
 
 /**
+ * @brief Generates a random integer in range [min, max].
+ * Note: This uses a closed interval (inclusive of both min and max).
+ * 
+ * @param min Minimum integer.
+ * @param max Maximum integer.
+ * @return int Random integer between min and max.
+ */
+inline int random_int(int min, int max) {
+    static thread_local std::mt19937 generator;
+    std::uniform_int_distribution<int> distribution(min, max);
+    return distribution(generator);
+}
+
+/**
  * @brief Generates a random vector with components in range [min, max).
  */
 inline glm::vec3 random_vec3(float min, float max) {

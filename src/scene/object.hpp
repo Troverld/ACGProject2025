@@ -62,4 +62,25 @@ public:
      * @return true If the object has a bounding box (infinite planes might not).
      */
     virtual bool bounding_box(float time0, float time1, AABB& output_box) const = 0;
+
+     /**
+     * @brief Calculates the probability density function value of a direction.
+     * Used when we want to know: "What was the probability of picking direction v towards this object?"
+     */
+    virtual float pdf_value(const glm::vec3& origin, const glm::vec3& v) const {
+        return 0.0f;
+    }
+
+    /**
+     * @brief Generates a random vector starting at 'origin' towards this object.
+     * Used for Next Event Estimation.
+     */
+    virtual glm::vec3 random_pointing_vector(const glm::vec3& origin) const {
+        return glm::vec3(1, 0, 0);
+    }
+    
+    /**
+     * @brief Helper to access material pointer.
+     */
+    virtual Material* get_material() const = 0;
 };

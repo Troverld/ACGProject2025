@@ -76,8 +76,8 @@ int main() {
             glm::vec3 pixel_color(0.0f, 0.0f, 0.0f);
 
             for (int s = 0; s < SAMPLES_PER_PIXEL; ++s) {
-                float u = (float(i) + random_float()) / (IMAGE_WIDTH - 1);
-                float v = (float(height - 1 - j) + random_float()) / (height - 1);
+                float u = (float(i) + random_float()) / IMAGE_WIDTH;
+                float v = (float(height - 1 - j) + random_float()) / height;
                 
                 Ray r = cam.get_ray(u, v);
                 pixel_color += integrator.estimate_radiance(r, world, MAX_DEPTH);
