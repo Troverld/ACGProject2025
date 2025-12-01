@@ -15,6 +15,7 @@
  */
 const float Infinity = std::numeric_limits<float>::infinity();
 const float PI = glm::pi<float>();
+const float INV_PI = 1.0f / PI;
 
 // Math tolerance for checking zero, etc. (1e-6 is safer for float than 1e-8)
 const float EPSILON = 1e-6f;
@@ -102,6 +103,26 @@ inline glm::vec3 random_in_unit_disk() {
  */
 inline glm::vec3 random_unit_vector() {
     return glm::normalize(random_in_unit_sphere());
+}
+
+/**
+ * @brief Generate a random direction with Cosine-Weighted distribution.
+ * Assumes the normal is (0, 0, 1).
+ * Used for importance sampling Lambertian surfaces.
+ * 
+ * Z = sqrt(1-r2) implies the probability is proportional to Cos(theta).
+ */
+inline glm::vec3 random_cosine_direction() {
+    float phi = random_float(0.0f, 2.0f * PI);
+    // float r2 = random_float();
+    float theta = random_float(0.0f, PI);
+    float r2 = sin(theta) * sin(theta);
+    float z = sqrt(1.0f - r2); 
+
+    float x = cos(phi) * sqrt(r2);
+    float y = sin(phi) * sqrt(r2);
+
+    return glm::vec3(x, y, z);
 }
 
 /**

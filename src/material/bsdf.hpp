@@ -2,6 +2,7 @@
 
 #include "material.hpp"
 #include "../core/utils.hpp"
+#include "../core/onb.hpp"
 
 /**
  * @brief Lambertian (Diffuse) material.
@@ -18,13 +19,26 @@ public:
         srec.is_specular = false; // a diffuse event
         srec.attenuation = albedo;
 
-        glm::vec3 scatter_direction = rec.normal + random_unit_vector();
-        if (near_zero(scatter_direction)) scatter_direction = rec.normal;
+        // 1. Build Orthonormal Basis from surface normal
+        Onb uvw;
+        uvw.build_from_w(rec.normal);
+
+        // 2. Sample a direction in Tangent Space (Cosine Weighted)
+        // This vector is guaranteed to point outwards relative to the normal.
+        glm::vec3 direction_local = random_cosine_direction();
+
+        // 3. Transform to World Space
+        glm::vec3 scatter_direction = uvw.local(direction_local);
         
-        srec.specular_ray = Ray(rec.p, scatter_direction, r_in.time());
-        
+        // 4. Create the ray
+        srec.specular_ray = Ray(rec.p, glm::normalize(scatter_direction), r_in.time());
+
+        // 5. Calculate PDF
+        // For cosine-weighted sampling, p(direction) = cos(theta) / PI.
+        // Note: The integrator uses this PDF to divide the result.
+        // We use the same formula here so they cancel out nicely in the integrator logic.
         srec.pdf = this->scattering_pdf(r_in, rec, srec.specular_ray);
-        
+
         return true;
     }
 
@@ -42,7 +56,7 @@ public:
         if (cos_theta <= 0) 
             return glm::vec3(0.0f);
 
-        return albedo / PI;
+        return albedo * INV_PI;
     }
     
     // Future-proofing: Lambertian PDF is cos(theta) / PI
@@ -73,6 +87,7 @@ public:
         glm::vec3 reflected = glm::reflect(glm::normalize(r_in.direction()), rec.normal);
         
         // For simplicity, even if fuzz > 0, the distribution is continuous, we still view it as single-point distribution.
+        // TODO: Microfacet GGX
         
         srec.is_specular = true; 
         srec.attenuation = albedo;
@@ -109,4 +124,73 @@ public:
 
 public:
     glm::vec3 emit_color;
+};
+
+/**
+ * @brief Dielectric material (Glass, Water, Diamond).
+ * Handles both Reflection (BRDF) and Refraction (BTDF).
+ */
+class Dielectric : public Material {
+public:
+    /**
+     * @param a The albedo (color) of the glass.
+     * @param index_of_refraction Refractive index (e.g., Glass = 1.5, Water = 1.33, Diamond = 2.4).
+     */
+    Dielectric(const glm::vec3& a, float index_of_refraction) : albedo(a), ir(index_of_refraction) {}
+
+    virtual bool scatter(const Ray& r_in, const HitRecord& rec, ScatterRecord& srec) const override {
+        srec.is_specular = true;
+        srec.pdf = 0.0f; // Delta attenuation
+        srec.attenuation = albedo; // Clear glass implies no surface color absorption (usually).
+
+        // 1. Determine refraction ratio (eta / eta_prime)
+        // If front_face is true, ray is entering: Air (1.0) -> Glass (ir) => ratio = 1.0 / ir
+        // If front_face is false, ray is exiting: Glass (ir) -> Air (1.0) => ratio = ir / 1.0
+        float refraction_ratio = rec.front_face ? (1.0f / ir) : ir;
+
+        glm::vec3 unit_direction = glm::normalize(r_in.direction());
+        
+        // 2. Calculate Cos theta and Sin theta
+        // fmin ensures numerical stability (cos cannot exceed 1.0)
+        float cos_theta = fmin(glm::dot(-unit_direction, rec.normal), 1.0f);
+        float sin_theta = sqrt(1.0f - cos_theta * cos_theta);
+
+        // 3. Total Internal Reflection (TIR) Check
+        // If eta * sin_theta > 1.0, strictly reflect.
+        bool cannot_refract = (refraction_ratio * sin_theta) > 1.0f;
+        
+        glm::vec3 direction;
+
+        // 4. Determine Scatter Direction (Reflect vs Refract)
+        // We use Schlick's approximation for Fresnel factor.
+        if (cannot_refract || reflectance(cos_theta, refraction_ratio) > random_float()) {
+            // Reflect (TIR or Fresnel Reflection)
+            direction = glm::reflect(unit_direction, rec.normal);
+        } else {
+            // Refract (Snell's Law)
+            direction = glm::refract(unit_direction, rec.normal, refraction_ratio);
+        }
+        
+        srec.specular_ray = Ray(rec.p, direction, r_in.time());
+        return true;
+    }
+
+    virtual bool is_emissive() const override { return false; }
+
+private:
+    /**
+     * @brief Schlick's approximation for reflectance.
+     * Approximates the contribution of Fresnel factor (how much light reflects vs refracts)
+     * based on the viewing angle.
+     */
+    static float reflectance(float cosine, float ref_idx) {
+        // R0 = ((n1 - n2) / (n1 + n2))^2
+        auto r0 = (1.0f - ref_idx) / (1.0f + ref_idx);
+        r0 = r0 * r0;
+        return r0 + (1.0f - r0) * pow((1.0f - cosine), 5.0f);
+    }
+
+public:
+    glm::vec3 albedo;
+    float ir; // Index of Refraction
 };

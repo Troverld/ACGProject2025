@@ -4,6 +4,9 @@ project(MyPathTracer)
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
+# --- 1. 查找 OpenMP ---
+find_package(OpenMP)
+
 # --- 1. 自动下载并配置 GLM (FetchContent) ---
 include(FetchContent)
 FetchContent_Declare(
@@ -33,6 +36,13 @@ add_executable(MyPathTracer ${SOURCES})
 
 # --- 6. 链接库与编译选项 ---
 target_link_libraries(MyPathTracer PRIVATE glm::glm)
+
+if(OpenMP_CXX_FOUND)
+    target_link_libraries(MyPathTracer PRIVATE OpenMP::OpenMP_CXX)
+    message(STATUS "OpenMP found and linked.")
+else()
+    message(WARNING "OpenMP not found. Compiling without parallelization.")
+endif()
 
 if(MSVC)
     # 解决中文注释编码警告 (C4819)

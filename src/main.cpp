@@ -32,12 +32,14 @@ const float ASPECT_RATIO = 16.0f / 9.0f;
 void setup_scene(Scene& world, Camera& cam) {
     // 1. Materials
     auto material_ground = std::make_shared<Lambertian>(glm::vec3(0.8f, 0.8f, 0.0f));
+    auto material_front = std::make_shared<Dielectric>(glm::vec3(0.9f, 0.4f, 0.0f), 1.1f);
     auto material_center = std::make_shared<Lambertian>(glm::vec3(0.1f, 0.2f, 0.5f));
     auto material_left   = std::make_shared<Metal>(glm::vec3(0.8f, 0.8f, 0.8f), 0.3f);
     auto material_right  = std::make_shared<Metal>(glm::vec3(0.8f, 0.6f, 0.2f), 0.0f);
 
     // 2. Objects
     world.add(std::make_shared<Sphere>(glm::vec3( 0.0f, -100.5f, -1.0f), 100.0f, material_ground));
+    world.add(std::make_shared<Sphere>(glm::vec3( 0.0f,    0.0f,  0.0f),   0.42f, material_front));
     world.add(std::make_shared<Sphere>(glm::vec3( 0.0f,    0.0f, -1.0f),   0.5f, material_center));
     world.add(std::make_shared<Sphere>(glm::vec3(-1.0f,    0.0f, -1.0f),   0.5f, material_left));
     world.add(std::make_shared<Sphere>(glm::vec3( 1.0f,    0.0f, -1.0f),   0.5f, material_right));
@@ -69,6 +71,7 @@ int main() {
     // 3. Render Loop
     std::vector<unsigned char> image(IMAGE_WIDTH * height * channels);
 
+    #pragma omp parallel for schedule(dynamic, 1)
     for (int j = 0; j < height; ++j) {
         if (j % 10 == 0) std::cout << "Scanning line " << j << " remaining: " << height - j << std::endl;
 
