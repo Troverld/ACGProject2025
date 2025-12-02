@@ -42,6 +42,12 @@ __pycache__/
 *.bmp
 *.tga
 
+!assets/**/*.png
+!assets/**/*.jpg
+!assets/**/*.jpeg
+!assets/**/*.ppm
+!assets/**/*.bmp
+!assets/**/*.tga
 !assets/
 
 # --- AI Context ---
