@@ -14,7 +14,8 @@
 inline float power_heuristic(float pdf_f, float pdf_g) {
     float f2 = pdf_f * pdf_f;
     float g2 = pdf_g * pdf_g;
-    return f2 / (f2 + g2);
+    float denom = f2 + g2;
+    return denom > 0.0f ? f2 / denom : 0.0f;
 }
 
 /**
@@ -62,7 +63,7 @@ public:
                 // If it's the first bounce or the previous bounce was specular, 
                 // we cannot use NEE, so we take full emission.
                 // Otherwise, use MIS weight.
-                if (bounce == 0) {
+                if (bounce == 0 || last_bounce_specular || scene.lights.empty()) {
                     L += throughput * emitted;
                 } else {
                     // We need to know: If we had used NEE, what was the probability of picking this light?
@@ -70,28 +71,12 @@ public:
                     // light_pdf_nee = (1/N) * pdf_on_light
                     
                     // We only apply MIS if we have lights to sample.
-                    if (!scene.lights.empty()) {
-                        // Retrieve the PDF of sampling this specific point on the object via NEE
-                        float pdf_light_area = rec.object->pdf_value(current_ray.origin(), current_ray.direction());
-                        float pdf_light_selection = 1.0f / scene.lights.size();
-                        float pdf_light = pdf_light_area * pdf_light_selection;
-                        
-                        // Retrieve the PDF of the BSDF that generated this ray (stored in previous loop or implied)
-                        // Actually, we need to pass the BSDF pdf from the previous bounce to here.
-                        // However, simpler standard implementation calculates weight at the moment of scattering.
-                        // Here we use a slightly different flow: we apply weight to the emission *now*.
-                        // But wait, we don't have the `bsdf_pdf` of the *previous* ray here easily unless passed.
-                        
-                        // Standard Approach: Accumulate L inside the loop where scatter happens? 
-                        // No, let's just use a cached variable `last_bsdf_pdf`.
-                        
-                        float weight = power_heuristic(last_bsdf_pdf, pdf_light);
-                        if (last_bounce_specular) weight = 1.0f; // Specular path has no NEE chance
+                    // Retrieve the PDF of sampling this specific point on the object via NEE
+                    float pdf_light_area = rec.object->pdf_value(current_ray.origin(), current_ray.direction());
+                    float pdf_light_selection = 1.0f / scene.lights.size();
+                    float pdf_light = pdf_light_area * pdf_light_selection;
 
-                        L += throughput * emitted * weight;
-                    } else {
-                         L += throughput * emitted;
-                    }
+                    L += throughput * emitted * power_heuristic(last_bsdf_pdf, pdf_light);
                 }
                 // Emission stops the path for opaque lights usually, but let's break.
                 break; 
@@ -101,6 +86,9 @@ public:
             if (!rec.mat_ptr->scatter(current_ray, rec, srec)) {
                 break;
             }
+
+            if (!srec.is_specular && srec.pdf < EPSILON)
+                break;
             
             // Store for next iteration's MIS weight calculation
             last_bsdf_pdf = srec.pdf; 
@@ -150,13 +138,9 @@ public:
             if (srec.is_specular) {
                 throughput *= srec.attenuation;
             } else {
-                if (srec.pdf > EPSILON) {
-                    glm::vec3 f_r = rec.mat_ptr->eval(current_ray, rec, srec.specular_ray);
-                    float cos_theta = std::abs(glm::dot(rec.normal, srec.specular_ray.direction()));
-                    throughput *= f_r * cos_theta / srec.pdf;
-                } else {
-                    break;
-                }
+                glm::vec3 f_r = rec.mat_ptr->eval(current_ray, rec, srec.specular_ray);
+                float cos_theta = std::abs(glm::dot(rec.normal, srec.specular_ray.direction()));
+                throughput *= f_r * cos_theta / srec.pdf;
             }
             
             current_ray = srec.specular_ray;

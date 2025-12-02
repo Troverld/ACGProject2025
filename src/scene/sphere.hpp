@@ -1,6 +1,7 @@
 #pragma once
 
 #include "object.hpp"
+#include "../core/onb.hpp"
 #include <glm/glm.hpp>
 #include <memory>
 
@@ -111,11 +112,7 @@ public:
         }
 
         // 1. Construct a local coordinate system (ONB)
-        // defined by the vector pointing to the sphere center
-        glm::vec3 w = glm::normalize(direction);
-        glm::vec3 a = (fabs(w.x) > 0.9f) ? glm::vec3(0, 1, 0) : glm::vec3(1, 0, 0);
-        glm::vec3 v = glm::normalize(glm::cross(w, a));
-        glm::vec3 u = glm::cross(w, v);
+        Onb uvw(direction);
 
         // 2. Sample uniform cone (Solid Angle Sampling)
         float r1 = random_float();
@@ -133,7 +130,7 @@ public:
         float y = sin(phi) * sin_theta;
 
         // 3. This is the unit direction towards the random point on sphere
-        glm::vec3 ray_dir = glm::normalize(x * u + y * v + z * w);
+        glm::vec3 ray_dir = glm::normalize(uvw.local(x, y, z));
 
         // 4. Calculate exact distance to the intersection point
         // Ray: O + t * D. Sphere: |P - C|^2 = R^2
