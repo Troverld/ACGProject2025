@@ -20,6 +20,7 @@ IGNORE_DIRS = {
     '.vscode', 
     '.idea', 
     'external',  # 通常不把 stb_image 或 glm 的源码发给 AI，太长了
+    'assets',    # 资源文件夹，通常不包含代码
     '__pycache__',
     'cmake-build-debug',
     'cmake-build-release'

@@ -3,7 +3,8 @@
 #include "material.hpp"
 #include "../core/utils.hpp"
 #include "../core/onb.hpp"
-
+#include "../texture/texture.hpp"
+#include "../texture/solid_color.hpp"
 /**
  * @brief Lambertian (Diffuse) material.
  * Scatters rays randomly using a cosine-weighted distribution (approximated here).
@@ -11,17 +12,21 @@
 class Lambertian : public Material {
 public:
     /**
-     * @param a The albedo (color) of the material.
+     * @brief Construct using a solid color.
      */
-    Lambertian(const glm::vec3& a) : albedo(a) {}
+    Lambertian(const glm::vec3& a) : albedo(std::make_shared<SolidColor>(a)) {}
+
+    /**
+     * @brief Construct using a texture.
+     */
+    Lambertian(std::shared_ptr<Texture> a) : albedo(a) {}
 
     virtual bool scatter(const Ray& r_in, const HitRecord& rec, ScatterRecord& srec) const override {
         srec.is_specular = false; // a diffuse event
-        srec.attenuation = albedo;
+        srec.attenuation = albedo->value(rec.u, rec.v, rec.p);
 
         // 1. Build Orthonormal Basis from surface normal
-        Onb uvw;
-        uvw.build_from_w(rec.normal);
+        Onb uvw(rec.normal);
 
         // 2. Sample a direction in Tangent Space (Cosine Weighted)
         // This vector is guaranteed to point outwards relative to the normal.
@@ -56,7 +61,7 @@ public:
         if (cos_theta <= 0) 
             return glm::vec3(0.0f);
 
-        return albedo * INV_PI;
+        return albedo->value(rec.u, rec.v, rec.p) * INV_PI;
     }
     
     // Future-proofing: Lambertian PDF is cos(theta) / PI
@@ -68,7 +73,7 @@ public:
     virtual bool is_emissive() const override { return false; }
 
 public:
-    glm::vec3 albedo;
+    std::shared_ptr<Texture> albedo;
 };
 
 /**
@@ -81,7 +86,8 @@ public:
      * @param a The albedo (color) of the reflection.
      * @param f Fuzziness factor [0, 1]. 0 is perfect mirror.
      */
-    Metal(const glm::vec3& a, float f) : albedo(a), fuzz(f < 1 ? f : 1) {}
+    Metal(const glm::vec3& a, float f) : albedo(std::make_shared<SolidColor>(a)), fuzz(f < 1 ? f : 1) {}
+    Metal(std::shared_ptr<Texture> a, float f) : albedo(a), fuzz(f < 1 ? f : 1) {}
 
     virtual bool scatter(const Ray& r_in, const HitRecord& rec, ScatterRecord& srec) const override {
         glm::vec3 reflected = glm::reflect(glm::normalize(r_in.direction()), rec.normal);
@@ -90,7 +96,7 @@ public:
         // TODO: Microfacet GGX
         
         srec.is_specular = true; 
-        srec.attenuation = albedo;
+        srec.attenuation = albedo->value(rec.u, rec.v, rec.p);
         srec.specular_ray = Ray(rec.p, reflected + fuzz * random_in_unit_sphere(), r_in.time());
         srec.pdf = 0.0f; // PDF of mirror reflection is meaningless.
 
@@ -100,7 +106,7 @@ public:
     virtual bool is_emissive() const override { return false; }
 
 public:
-    glm::vec3 albedo;
+    std::shared_ptr<Texture> albedo;
     float fuzz;
 };
 
@@ -110,20 +116,21 @@ public:
  */
 class DiffuseLight : public Material {
 public:
-    DiffuseLight(const glm::vec3& c) : emit_color(c) {}
+    DiffuseLight(const glm::vec3& c) : emit_texture(std::make_shared<SolidColor>(c)) {}
+    DiffuseLight(std::shared_ptr<Texture> a) : emit_texture(a) {}
 
     virtual bool scatter(const Ray& r_in, const HitRecord& rec, ScatterRecord& srec)const override {
         return false; // No scattering, just emission (for now)
     }
 
     virtual glm::vec3 emitted(float u, float v, const glm::vec3& p) const override {
-        return emit_color;
+        return emit_texture->value(u, v, p);
     }
     
     virtual bool is_emissive() const override { return true; }
 
 public:
-    glm::vec3 emit_color;
+    std::shared_ptr<Texture> emit_texture;
 };
 
 /**
@@ -153,7 +160,7 @@ public:
         // 2. Calculate Cos theta and Sin theta
         // fmin ensures numerical stability (cos cannot exceed 1.0)
         float cos_theta = fmin(glm::dot(-unit_direction, rec.normal), 1.0f);
-        float sin_theta = sqrt(1.0f - cos_theta * cos_theta);
+        float sin_theta = sqrt(fmax(0.0f, 1.0f - cos_theta * cos_theta));
 
         // 3. Total Internal Reflection (TIR) Check
         // If eta * sin_theta > 1.0, strictly reflect.

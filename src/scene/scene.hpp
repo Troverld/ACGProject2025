@@ -4,7 +4,7 @@
 #include "light.hpp"
 #include <vector>
 #include <memory>
-
+#include "../texture/texture.hpp"
 /**
  * @brief A container for all objects in the scene.
  * Also implements the Object interface, so a Scene can be treated as a single Hittable.
@@ -13,7 +13,9 @@ class Scene : public Object {
 public:
     Scene() {}
     Scene(std::shared_ptr<Object> object) { add(object); }
-
+    void set_background(std::shared_ptr<Texture> bg) {
+        background_texture = bg;
+    }
     /**
      * @brief Clear all objects and lights from the scene.
      */
@@ -76,13 +78,22 @@ public:
 
     /**
      * @brief Samples the background color for a ray that missed all geometry.
-     * Currently implements a simple vertical gradient (blue-ish sky).
-     * Future implementations should support HDRI maps here.
+     * Supports HDRI maps or default gradient.
      * 
      * @param r The ray that missed the scene geometry.
      * @return glm::vec3 The radiance/color of the background.
      */
     glm::vec3 sample_background(const Ray& r) const {
+        // --- ADDED: Texture Sampling ---
+        if (background_texture) {
+            glm::vec3 unit_direction = glm::normalize(r.direction());
+            float u, v;
+            // Map the direction vector to UV coordinates using spherical mapping
+            get_sphere_uv(unit_direction, u, v);
+            return background_texture->value(u, v, unit_direction);
+        }
+
+        // Default Gradient Fallback
         glm::vec3 unit_direction = glm::normalize(r.direction());
         // Map y from [-1, 1] to [0, 1]
         float t = 0.5f * (unit_direction.y + 1.0f);
@@ -95,4 +106,5 @@ public:
 public:
     std::vector<std::shared_ptr<Object>> objects;
     std::vector<std::shared_ptr<Light>> lights;
+    std::shared_ptr<Texture> background_texture; // Added member
 };

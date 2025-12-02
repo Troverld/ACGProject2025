@@ -29,6 +29,7 @@ set(CMAKE_RUNTIME_OUTPUT_DIRECTORY_RELEASE ${OUTPUT_DIR})
 # --- 4. 添加源文件 ---
 set(SOURCES
     src/main.cpp
+    src/core/stb_impl.cpp
 )
 
 # --- 5. 生成可执行文件 ---

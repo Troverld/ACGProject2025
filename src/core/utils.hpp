@@ -29,7 +29,7 @@ const float SHADOW_EPSILON = 1e-3f;
  * @return float Random value between 0.0 (inclusive) and 1.0 (exclusive).
  */
 inline float random_float() {
-    static thread_local std::mt19937 generator;
+    static thread_local std::mt19937 generator(std::random_device{}()); 
     std::uniform_real_distribution<float> distribution(0.0f, 1.0f);
     return distribution(generator);
 }
@@ -54,7 +54,7 @@ inline float random_float(float min, float max) {
  * @return int Random integer between min and max.
  */
 inline int random_int(int min, int max) {
-    static thread_local std::mt19937 generator;
+    static thread_local std::mt19937 generator(std::random_device{}());
     std::uniform_int_distribution<int> distribution(min, max);
     return distribution(generator);
 }
@@ -110,17 +110,18 @@ inline glm::vec3 random_unit_vector() {
  * Assumes the normal is (0, 0, 1).
  * Used for importance sampling Lambertian surfaces.
  * 
- * Z = sqrt(1-r2) implies the probability is proportional to Cos(theta).
+ * Corrected implementation using concentric disk mapping or valid math.
  */
 inline glm::vec3 random_cosine_direction() {
-    float phi = random_float(0.0f, 2.0f * PI);
-    // float r2 = random_float();
-    float theta = random_float(0.0f, PI);
-    float r2 = sin(theta) * sin(theta);
-    float z = sqrt(1.0f - r2); 
+    float r1 = random_float();
+    float r2 = random_float();
 
+    float phi = 2.0f * PI * r1;
+    
+    // x, y on the disk, z defined by sphere constraint
     float x = cos(phi) * sqrt(r2);
     float y = sin(phi) * sqrt(r2);
+    float z = sqrt(1.0f - r2); 
 
     return glm::vec3(x, y, z);
 }
@@ -131,4 +132,24 @@ inline glm::vec3 random_cosine_direction() {
  */
 inline bool near_zero(const glm::vec3& v) {
     return (std::fabs(v.x) < EPSILON) && (std::fabs(v.y) < EPSILON) && (std::fabs(v.z) < EPSILON);
+}
+
+/**
+ * @brief Utility to map a point on a unit sphere to [0,1] UV coordinates.
+ * Used by Sphere objects and Spherical Environment Maps.
+ * 
+ * @param p Point on the unit sphere (must be normalized).
+ * @param u Output [0, 1] horizontal coordinate.
+ * @param v Output [0, 1] vertical coordinate.
+ */
+inline void get_sphere_uv(const glm::vec3& p, float& u, float& v) {
+    // p: a given point on the sphere of radius one, centered at the origin.
+    // u: returned value [0,1] of angle around the Y axis from X=-1.
+    // v: returned value [0,1] of angle from Y=-1 to Y=+1.
+    
+    float theta = acos(-p.y);
+    float phi = atan2(-p.z, p.x) + PI;
+
+    u = phi / (2 * PI);
+    v = theta / PI;
 }

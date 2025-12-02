@@ -14,7 +14,7 @@ public:
      * @brief Construct an ONB from a surface normal (w).
      * Calculates u and v such that {u, v, w} form a right-handed orthonormal basis.
      */
-    void build_from_w(const glm::vec3& n) {
+    Onb(const glm::vec3& n) {
         axis[2] = glm::normalize(n);
         
         // Check if n is parallel to the world Y axis to avoid singularity

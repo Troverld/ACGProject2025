@@ -45,6 +45,7 @@ public:
         rec.p = r.at(rec.t);
         glm::vec3 outward_normal = (rec.p - center) / radius;
         rec.set_face_normal(r, outward_normal);
+        get_sphere_uv(outward_normal, rec.u, rec.v); 
         rec.mat_ptr = mat_ptr.get(); // Assign the material to the hit record. Use .get() to extract the raw pointer, so that copy cost of shared_ptr is avoided.
 
         return true;
@@ -78,52 +79,60 @@ public:
     }
 
     /**
-     * @brief Generates a random direction towards the sphere.
-     * Uniformly samples the solid angle subtended by the sphere.
-    */
+     * @brief Generates a random vector from origin TO the sphere surface.
+     * Fixed: Now returns a vector with length equal to the distance, not normalized.
+     */
     virtual glm::vec3 random_pointing_vector(const glm::vec3& o) const override {
         glm::vec3 direction = center - o;
-        float distance_squared = glm::dot(direction, direction);
+        float dist_squared = glm::dot(direction, direction);
         
-        // Construct a local coordinate system (ONB)
+        // Safety check: if inside the sphere, return center (or handle gracefully)
+        if (dist_squared <= radius * radius) {
+             return center - o; 
+        }
+
+        // 1. Construct a local coordinate system (ONB)
+        // defined by the vector pointing to the sphere center
         glm::vec3 w = glm::normalize(direction);
         glm::vec3 a = (fabs(w.x) > 0.9f) ? glm::vec3(0, 1, 0) : glm::vec3(1, 0, 0);
         glm::vec3 v = glm::normalize(glm::cross(w, a));
         glm::vec3 u = glm::cross(w, v);
 
-        // Sample uniform cone
+        // 2. Sample uniform cone (Solid Angle Sampling)
         float r1 = random_float();
         float r2 = random_float();
-        float z = 1 + r2 * (sqrt(1 - radius * radius / distance_squared) - 1);
-        float phi = 2 * PI * r1;
-        float x = cos(phi) * sqrt(1 - z * z);
-        float y = sin(phi) * sqrt(1 - z * z);
+        
+        // cos_theta_max is the angle subtended by the sphere radius
+        float cos_theta_max = sqrt(1.0f - radius * radius / dist_squared);
+        
+        // z is cos(theta) sampled uniformly between [cos_theta_max, 1]
+        float z = 1.0f + r2 * (cos_theta_max - 1.0f);
+        
+        float phi = 2.0f * PI * r1;
+        float sin_theta = sqrt(1.0f - z * z);
+        float x = cos(phi) * sin_theta;
+        float y = sin(phi) * sin_theta;
 
-        // Transform to world space
-        return x * u + y * v + z * w; // Return the vector, not normalized is fine for now as it indicates position relative
+        // 3. This is the unit direction towards the random point on sphere
+        glm::vec3 ray_dir = glm::normalize(x * u + y * v + z * w);
+
+        // 4. Calculate exact distance to the intersection point
+        // Ray: O + t * D. Sphere: |P - C|^2 = R^2
+        // We know it intersects because we sampled inside the cone.
+        // Solves: t^2 + 2(O-C).D * t + (|O-C|^2 - R^2) = 0
+        // Simplification: We already have vector (o - center) which is -direction from step 1
+        glm::vec3 oc = o - center;
+        float b = glm::dot(oc, ray_dir);
+        float c = glm::dot(oc, oc) - radius * radius;
+        float discriminant = b * b - c;
+        
+        // We take the smaller positive root (entrance point)
+        float t = -b - sqrt(discriminant > 0 ? discriminant : 0);
+
+        return ray_dir * t;
     }
     
     virtual Material* get_material() const override { return mat_ptr.get(); }
-
-private:
-    /**
-     * @brief Calculates UV coordinates for a sphere.
-     * Maps (x,y,z) to (u,v) in [0,1].
-     */
-    static void get_sphere_uv(const glm::vec3& p, float& u, float& v) {
-        // p: a given point on the sphere of radius one, centered at the origin.
-        // u: returned value [0,1] of angle around the Y axis from X=-1.
-        // v: returned value [0,1] of angle from Y=-1 to Y=+1.
-        //     <1 0 0> yields <0.50 0.50>       <-1  0  0> yields <0.00 0.50>
-        //     <0 1 0> yields <0.50 1.00>       < 0 -1  0> yields <0.50 0.00>
-        //     <0 0 1> yields <0.25 0.50>       < 0  0 -1> yields <0.75 0.50>
-
-        float theta = acos(-p.y);
-        float phi = atan2(-p.z, p.x) + PI;
-
-        u = phi / (2 * PI);
-        v = theta / PI;
-    }
 
 public:
     glm::vec3 center;

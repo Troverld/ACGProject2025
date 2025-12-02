@@ -72,8 +72,11 @@ public:
     }
 
     /**
-     * @brief Generates a random vector starting at 'origin' towards this object.
-     * Used for Next Event Estimation.
+     * @brief Generates a random vector starting at 'origin' towards a point on this object.
+     * IMPORTANT: The returned vector's length must represent the distance to the surface point.
+     * 
+     * @param origin The point from which we are viewing the object.
+     * @return glm::vec3 Vector P_surface - origin.
      */
     virtual glm::vec3 random_pointing_vector(const glm::vec3& origin) const {
         return glm::vec3(1, 0, 0);

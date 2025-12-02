@@ -41,27 +41,28 @@ public:
     DiffuseAreaLight(std::shared_ptr<Object> obj) : shape(obj) {}
 
     virtual glm::vec3 sample_li(const glm::vec3& origin, glm::vec3& wi, float& pdf, float& distance) const override {
-        // 1. Ask the shape for a random direction towards it
-        wi = shape->random_pointing_vector(origin);
+        // 1. Get vector from origin to a random point on the light source
+        glm::vec3 to_light_vector = shape->random_pointing_vector(origin);
         
-        // 2. Calculate distance and normalize wi
-        distance = glm::length(wi);
-        wi = glm::normalize(wi);
+        // 2. Calculate distance
+        distance = glm::length(to_light_vector);
+        if (distance < EPSILON) {
+            pdf = 0;
+            return glm::vec3(0);
+        }
 
-        // 3. Get the PDF of this direction
+        // 3. Normalize to get direction
+        wi = to_light_vector / distance;
+
+        // 4. Get the PDF of this direction (Solid Angle PDF for Sphere)
         pdf = shape->pdf_value(origin, wi);
+        
         if (pdf <= EPSILON) return glm::vec3(0.0f);
 
-        // 4. Get the emitted radiance.
-        // We assume the ray hits the "front" of the light.
-        // In a robust system, we would raycast to find the specific UV, but here we simplify.
-        // We evaluate emission at a dummy point because DiffuseLight usually emits uniformly.
-        // Note: We multiply by Dot(N, -wi) inside the integrator or assume emission is Lambertian.
-        
-        // Retrieve emission from the material
-        // We assume the shape has a material (Scene logic guarantees this).
-        // Since we don't have the exact hit point on the light source here without tracing,
-        // we assume uniform emission for area lights in this simplified implementation.
+        // 5. Get emitted radiance
+        // Note: For Area lights, emission is usually directional (cosine weighted at the source),
+        // but DiffuseLight material simplifies this to uniform emission.
+        // We supply the actual hit point (origin + wi * distance) to support spatially varying emission textures.
         return shape->get_material()->emitted(0, 0, origin + wi * distance); 
     }
 
