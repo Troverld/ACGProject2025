@@ -52,7 +52,7 @@ public:
      *         For Specular/Mirror: 0.0 (Delta distributions cannot be evaluated explicitly).
      */
     virtual glm::vec3 eval(
-        const Ray& r_in, const HitRecord& rec, const Ray& scattered
+        const Ray& r_in, const HitRecord& rec, const Ray& scattered, const glm::vec3& shading_normal
     ) const {
         return glm::vec3(0.0f, 0.0f, 0.0f);
     }
@@ -69,7 +69,7 @@ public:
      * @brief Probability Density Function value for a specific direction.
      * Essential for Importance Sampling (MIS).
      */
-    virtual float scattering_pdf(const Ray& r_in, const HitRecord& rec, const Ray& scattered) const {
+    virtual float scattering_pdf(const Ray& r_in, const HitRecord& rec, const Ray& scattered, const glm::vec3& shading_normal) const {
         return 0.0;
     }
 

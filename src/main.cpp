@@ -24,7 +24,7 @@
 
 // --- Configuration ---
 const int MAX_DEPTH = 50;
-const int SAMPLES_PER_PIXEL =100;
+const int SAMPLES_PER_PIXEL = 100;
 const int IMAGE_WIDTH = 800;
 const float ASPECT_RATIO = 16.0f / 9.0f;
 
@@ -84,13 +84,13 @@ void setup_scene(Scene& world, Camera& cam) {
     glm::vec3 p3(-1.2f, 1.4f, 1.9f); // Top
 
     // Base Triangle (Order for normal pointing down/out)
-    world.add(std::make_shared<Triangle>(p2, p1, p0, mat_bricks)); 
+    world.add(std::make_shared<Triangle>(p2, p1, p0, mat_light_dim)); 
     // Side 1
-    world.add(std::make_shared<Triangle>(p0, p1, p3, mat_bricks));
+    world.add(std::make_shared<Triangle>(p0, p1, p3, mat_light_dim));
     // Side 2
-    world.add(std::make_shared<Triangle>(p1, p2, p3, mat_bricks));
+    world.add(std::make_shared<Triangle>(p1, p2, p3, mat_light_dim));
     // Side 3
-    world.add(std::make_shared<Triangle>(p2, p0, p3, mat_bricks));
+    world.add(std::make_shared<Triangle>(p2, p0, p3, mat_light_dim));
 
     // Three main subjects
     world.add(std::make_shared<Sphere>(glm::vec3(-2.2f, 1.0f, 0.0f), 1.0f, mat_glass));
@@ -167,8 +167,8 @@ int main() {
         }
     }
 
-    stbi_write_png("mis_verification.png", IMAGE_WIDTH, height, channels, image.data(), IMAGE_WIDTH * channels);
-    std::cout << "Done! Saved to mis_verification.png" << std::endl;
+    stbi_write_png("fixed_firefly.png", IMAGE_WIDTH, height, channels, image.data(), IMAGE_WIDTH * channels);
+    std::cout << "Done! Saved to fixed_firefly.png" << std::endl;
 
     return 0;
 }

@@ -63,8 +63,9 @@ public:
                 // If it's the first bounce or the previous bounce was specular, 
                 // we cannot use NEE, so we take full emission.
                 // Otherwise, use MIS weight.
-                if (bounce == 0 || last_bounce_specular || scene.lights.empty()) {
-                    L += throughput * emitted;
+                glm::vec3 nee_contribution(0.0f);
+                if (bounce == 0 || last_bounce_specular) {
+                    nee_contribution = throughput * emitted;
                 } else {
                     // We need to know: If we had used NEE, what was the probability of picking this light?
                     // NOTE: This assumes we pick 1 random light uniformly from N lights.
@@ -73,11 +74,15 @@ public:
                     // We only apply MIS if we have lights to sample.
                     // Retrieve the PDF of sampling this specific point on the object via NEE
                     float pdf_light_area = rec.object->pdf_value(current_ray.origin(), current_ray.direction());
-                    float pdf_light_selection = 1.0f / scene.lights.size();
+                    float pdf_light_selection = 1.0f / (scene.lights.empty() ? 1.0f : float(scene.lights.size()));
                     float pdf_light = pdf_light_area * pdf_light_selection;
 
-                    L += throughput * emitted * power_heuristic(last_bsdf_pdf, pdf_light);
+                    nee_contribution = throughput * emitted * power_heuristic(last_bsdf_pdf, pdf_light);
                 }
+                if (bounce > 0) { // Clamp
+                    clamp_radiance(nee_contribution);
+                }
+                L += nee_contribution;
                 // Emission stops the path for opaque lights usually, but let's break.
                 break; 
             }
@@ -111,11 +116,11 @@ public:
                     HitRecord shadow_rec;
                     
                     if (!scene.intersect(shadow_ray, SHADOW_EPSILON, dist - SHADOW_EPSILON, shadow_rec)) {
-                        glm::vec3 f_r = rec.mat_ptr->eval(current_ray, rec, shadow_ray);
+                        glm::vec3 f_r = rec.mat_ptr->eval(current_ray, rec, shadow_ray, srec.shading_normal);
                         
                         if (!near_zero(f_r)) {
                             // Calculate BSDF PDF for this NEE direction
-                            float bsdf_pdf = rec.mat_ptr->scattering_pdf(current_ray, rec, shadow_ray);
+                            float bsdf_pdf = rec.mat_ptr->scattering_pdf(current_ray, rec, shadow_ray, srec.shading_normal);
                             
                             // MIS Weight: balance Light sampling vs BSDF sampling
                             // We selected a specific light (prob 1/N), then a point on it (light_pdf).
@@ -126,8 +131,10 @@ public:
 
                             float cos_theta = glm::dot(srec.shading_normal, glm::normalize(to_light));
                             if (cos_theta > 0.0f) {
-                                if (glm::dot(rec.normal, glm::normalize(to_light)) > 0.0f) 
-                                    L += throughput * L_emitted * f_r * cos_theta * weight / total_light_pdf;
+                                // if (glm::dot(rec.normal, glm::normalize(to_light)) > 0.0f) 
+                                glm::vec3 nee_contribution = throughput * L_emitted * f_r * cos_theta * weight / total_light_pdf;
+                                clamp_radiance(nee_contribution);
+                                L += nee_contribution;
                             }
                         }
                     }
@@ -138,8 +145,8 @@ public:
             if (srec.is_specular) {
                 throughput *= srec.attenuation;
             } else {
-                glm::vec3 f_r = rec.mat_ptr->eval(current_ray, rec, srec.specular_ray);
-                float cos_theta = std::abs(glm::dot(rec.normal, srec.specular_ray.direction()));
+                glm::vec3 f_r = rec.mat_ptr->eval(current_ray, rec, srec.specular_ray, srec.shading_normal);
+                float cos_theta = std::abs(glm::dot(srec.shading_normal, srec.specular_ray.direction()));
                 throughput *= f_r * cos_theta / srec.pdf;
             }
             
@@ -157,4 +164,12 @@ public:
 
 private:
     int max_depth;
+
+    void clamp_radiance(glm::vec3 &L, float limit = 3.0f) const {
+        float lum = glm::length(L);
+        if (lum > limit) {
+            L = L * (limit / lum);
+        }
+        return;
+    }
 };

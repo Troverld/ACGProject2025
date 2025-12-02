@@ -87,13 +87,27 @@ public:
      */
     virtual float pdf_value(const glm::vec3& o, const glm::vec3& v) const override {
         HitRecord rec;
-        // If ray doesn't hit this sphere, PDF is 0
-        if (!this->intersect(Ray(o, v), 0.001f, Infinity, rec))
-            return 0.0f;
+        if (!this->intersect(Ray(o, v), 0.001f, Infinity, rec)) return 0.0f;
 
         glm::vec3 direction = center - o;
-        float cos_theta_max = sqrt(1 - radius * radius / glm::dot(direction, direction));
-        float solid_angle = 2 * PI * (1 - cos_theta_max);
+        float dist_squared = glm::dot(direction, direction);
+        float radius_squared = radius * radius;
+        
+        if (dist_squared <= radius_squared) return 0.0f;
+        
+        float sin_theta_sq = radius_squared / dist_squared;
+        float solid_angle;
+        
+        // 当角度很小时使用泰勒展开，防止精度丢失
+        if (sin_theta_sq < 1e-4f) {
+            // 1 - (1 - x/2 - x^2/8) = x/2 + x^2/8
+            solid_angle = 2 * PI * (0.5f * sin_theta_sq + 0.125f * sin_theta_sq * sin_theta_sq);
+        } else {
+            float cos_theta_max = sqrt(1.0f - sin_theta_sq);
+            solid_angle = 2 * PI * (1.0f - cos_theta_max);
+        }
+
+        if (solid_angle < 1e-6f) return 0.0f;
 
         return 1.0f / solid_angle;
     }

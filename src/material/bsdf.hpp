@@ -74,13 +74,10 @@ public:
      * @brief Evaluates the Lambertian BRDF.
      * Formula: f_r = albedo / PI
      */
-    virtual glm::vec3 eval(
-        const Ray& r_in, const HitRecord& rec, const Ray& scattered
+     virtual glm::vec3 eval(
+        const Ray& r_in, const HitRecord& rec, const Ray& scattered, const glm::vec3& shading_normal
     ) const override {
-        // Dot product check: strictly speaking, light must come from outside.
-        // But the integrator handles the cosine term. We just return the material property.
-        // Check if the scattered ray is on the same side as the normal
-        float cos_theta = glm::dot(rec.normal, glm::normalize(scattered.direction()));
+        float cos_theta = glm::dot(shading_normal, glm::normalize(scattered.direction()));
         if (cos_theta <= 0) 
             return glm::vec3(0.0f);
 
@@ -88,8 +85,8 @@ public:
     }
     
     // Future-proofing: Lambertian PDF is cos(theta) / PI
-    virtual float scattering_pdf(const Ray& r_in, const HitRecord& rec, const Ray& scattered) const override {
-        float cosine = glm::dot(rec.normal, glm::normalize(scattered.direction()));
+    virtual float scattering_pdf(const Ray& r_in, const HitRecord& rec, const Ray& scattered, const glm::vec3& shading_normal) const override {
+        float cosine = glm::dot(shading_normal, glm::normalize(scattered.direction()));
         return cosine < 0 ? 0 : cosine * INV_PI;
     }
     
@@ -121,7 +118,10 @@ public:
         
         srec.is_specular = true; 
         srec.attenuation = albedo->value(rec.u, rec.v, rec.p);
-        srec.specular_ray = Ray(rec.p, reflected + fuzz * random_in_unit_sphere(), r_in.time());
+        glm::vec3 scattered_dir = reflected + fuzz * random_in_unit_sphere();
+        if (near_zero(scattered_dir))
+            scattered_dir = reflected;
+        srec.specular_ray = Ray(rec.p, scattered_dir, r_in.time());
         srec.pdf = 0.0f; // PDF of mirror reflection is meaningless.
 
         return (glm::dot(srec.specular_ray.direction(), rec.normal) > 0);
