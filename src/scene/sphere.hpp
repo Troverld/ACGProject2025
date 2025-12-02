@@ -21,32 +21,39 @@ public:
     Sphere(glm::vec3 cen, float r, std::shared_ptr<Material> m) 
         : center(cen), radius(r), mat_ptr(m) {};
 
-
+    /**
+     * @brief Double precision ray-sphere intersection to reduce artifacts.
+     */
     virtual bool intersect(const Ray& r, float t_min, float t_max, HitRecord& rec) const override {
         glm::vec3 oc = r.origin() - center;
-        float a = glm::dot(r.direction(), r.direction());
-        float half_b = glm::dot(oc, r.direction());
-        float c = glm::dot(oc, oc) - radius * radius;
         
-        float discriminant = half_b * half_b - a * c;
+        // Use double precision to prevent striping artifacts on large spheres (like the ground)
+        double a = glm::dot(r.direction(), r.direction());
+        double half_b = glm::dot(oc, r.direction());
+        double c = glm::dot(oc, oc) - double(radius) * double(radius); // Cast to double before multiplication
+        
+        double discriminant = half_b * half_b - a * c;
         if (discriminant < 0) return false;
         
-        float sqrtd = sqrt(discriminant);
+        double sqrtd = sqrt(discriminant);
 
         // Find the nearest root that lies in the acceptable range.
-        float root = (-half_b - sqrtd) / a;
+        double root = (-half_b - sqrtd) / a;
         if (root < t_min || root > t_max) {
             root = (-half_b + sqrtd) / a;
             if (root < t_min || root > t_max)
                 return false;
         }
 
-        rec.t = root;
+        // Cast back to float for the record
+        rec.t = static_cast<float>(root);
         rec.p = r.at(rec.t);
+        
         glm::vec3 outward_normal = (rec.p - center) / radius;
         rec.set_face_normal(r, outward_normal);
         get_sphere_uv(outward_normal, rec.u, rec.v); 
-        rec.mat_ptr = mat_ptr.get(); // Assign the material to the hit record. Use .get() to extract the raw pointer, so that copy cost of shared_ptr is avoided.
+        rec.mat_ptr = mat_ptr.get();
+        rec.object = this;
 
         return true;
     }

@@ -26,6 +26,14 @@ public:
      * @return glm::vec3 The radiance (color * intensity) emitted.
      */
     virtual glm::vec3 sample_li(const glm::vec3& origin, glm::vec3& wi, float& pdf, float& distance) const = 0;
+    
+    /**
+     * @brief Returns the PDF of sampling direction 'wi' from 'origin' towards this light.
+     * Used for MIS when a ray hits the light source via BSDF sampling.
+     */
+    virtual float pdf_value(const glm::vec3& origin, const glm::vec3& wi) const {
+        return 0.0f;
+    }
 };
 
 /**
@@ -64,6 +72,13 @@ public:
         // but DiffuseLight material simplifies this to uniform emission.
         // We supply the actual hit point (origin + wi * distance) to support spatially varying emission textures.
         return shape->get_material()->emitted(0, 0, origin + wi * distance); 
+    }    
+    
+    /**
+     * @brief Delegate PDF calculation to the underlying shape.
+     */
+    virtual float pdf_value(const glm::vec3& origin, const glm::vec3& wi) const override {
+        return shape->pdf_value(origin, wi);
     }
 
 public:

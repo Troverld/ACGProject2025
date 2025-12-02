@@ -6,6 +6,7 @@
 #include <memory>
 
 // Forward declaration to avoid circular dependency
+class Object; 
 class Material;
 
 /**
@@ -19,6 +20,7 @@ struct HitRecord {
     bool front_face;              ///< True if ray hit the front face, false if back face.
     float u;                      ///< Texture coordinate U [0,1].
     float v;                      ///< Texture coordinate V [0,1].
+    const Object* object = nullptr; ///< Pointer to the geometric object hit. (Added for MIS)
 
     /**
      * @brief Sets the hit record normal and front_face flag based on ray direction.

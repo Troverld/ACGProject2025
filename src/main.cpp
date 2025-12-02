@@ -32,53 +32,57 @@ const float ASPECT_RATIO = 16.0f / 9.0f;
  * Demonstrates various textures.
  */
 void setup_scene(Scene& world, Camera& cam) {
-    // 1. Texture Creation
-    auto checker = std::make_shared<CheckerTexture>(
-        glm::vec3(0.2f, 0.3f, 0.1f), 
-        glm::vec3(0.9f, 0.9f, 0.9f),
-        10.0f
-    );
+    world.clear();
+
+    // 1. Materials
+    auto mat_ground   = std::make_shared<Lambertian>(glm::vec3(0.5f, 0.5f, 0.5f));
+    auto mat_glass    = std::make_shared<Dielectric>(glm::vec3(1.0f), 1.5f);
+    auto mat_matte    = std::make_shared<Lambertian>(glm::vec3(0.4f, 0.2f, 0.1f)); // Reddish
+    auto mat_metal    = std::make_shared<Metal>(glm::vec3(0.7f, 0.6f, 0.5f), 0.1f); // Rough Gold
+
+    // High intensity light (tests NEE dominant case)
+    auto mat_light_strong = std::make_shared<DiffuseLight>(glm::vec3(15.0f, 15.0f, 15.0f)); 
+    // Low intensity large light (tests BSDF sampling dominant case)
+    auto mat_light_dim    = std::make_shared<DiffuseLight>(glm::vec3(2.0f, 2.0f, 4.0f));    
+
+    // 2. Objects
     
-    auto perlin_texture = std::make_shared<Perlin>(4.0f);
+    // Ground (Huge sphere to approximate a plane)
+    world.add(std::make_shared<Sphere>(glm::vec3(0.0f, -1000.0f, 0.0f), 1000.0f, mat_ground));
 
-    // auto hdr_texture = std::make_shared<ImageTexture>("assets/envir/studio_small_05_1k.hdr");
-    // world.set_background(hdr_texture);
+    // Three main subjects
+    world.add(std::make_shared<Sphere>(glm::vec3(-2.2f, 1.0f, 0.0f), 1.0f, mat_glass));
+    world.add(std::make_shared<Sphere>(glm::vec3( 0.0f, 1.0f, 0.0f), 1.0f, mat_matte));
+    world.add(std::make_shared<Sphere>(glm::vec3( 2.2f, 1.0f, 0.0f), 1.0f, mat_metal));
 
-    auto background_texture = std::make_shared<SolidColor>(0.7f, 0.8f, 1.0f);
-    world.set_background(background_texture);
+    // Lights
+    // Small strong light above
+    world.add(std::make_shared<Sphere>(glm::vec3(0.0f, 5.0f, 0.0f), 0.5f, mat_light_strong));
+    // Large dim light to the side/back
+    world.add(std::make_shared<Sphere>(glm::vec3(-4.0f, 3.0f, -3.0f), 1.5f, mat_light_dim));
 
-    // 2. Materials
-    auto material_ground = std::make_shared<Lambertian>(checker); // Checkerboard ground
-    auto material_center = std::make_shared<Lambertian>(perlin_texture); // Marble center sphere
-    auto material_left   = std::make_shared<Dielectric>(glm::vec3(1.0f), 1.5f); // Glass
-    auto material_right  = std::make_shared<Metal>(glm::vec3(0.8f, 0.6f, 0.2f), 0.0f); // Gold
+    // Background (Black to verify lighting strictly comes from emissive objects)
+    world.set_background(std::make_shared<SolidColor>(0.0f, 0.0f, 0.0f));
 
-    auto material_light = std::make_shared<DiffuseLight>(glm::vec3(4.0f, 4.0f, 4.0f));
-
-    // 3. Objects
-    world.add(std::make_shared<Sphere>(glm::vec3( 0.0f, -100.5f, -1.0f), 100.0f, material_ground));
-    world.add(std::make_shared<Sphere>(glm::vec3( 0.0f,    0.0f, -1.0f),   0.5f, material_center));
-    world.add(std::make_shared<Sphere>(glm::vec3(-1.0f,    0.0f, -1.0f),   0.5f, material_left));
-    // Bubble inside glass
-    world.add(std::make_shared<Sphere>(glm::vec3(-1.0f,    0.0f, -1.0f), -0.4f, material_left)); 
-    world.add(std::make_shared<Sphere>(glm::vec3( 1.0f,    0.0f, -1.0f),   0.5f, material_right));
-    world.add(std::make_shared<Sphere>(glm::vec3(0.0f, 7.0f, 0.0f), 2.0f, material_light));
-
-    // 4. Camera
-    glm::vec3 lookfrom(3.0f, 3.0f, 2.0f);
-    glm::vec3 lookat(0.0f, 0.0f, -1.0f);
+    // 3. Camera Setup
+    glm::vec3 lookfrom(0.0f, 4.0f, 8.0f);
+    glm::vec3 lookat(0.0f, 1.0f, 0.0f);
     glm::vec3 vup(0.0f, 1.0f, 0.0f);
     float dist_to_focus = glm::length(lookfrom - lookat);
-    float aperture = 0.1f; 
+    float aperture = 0.05f; 
 
-    cam = Camera(lookfrom, lookat, vup, 20.0f, ASPECT_RATIO, aperture, dist_to_focus);
+    // FOV 30 for a portrait-like view
+    cam = Camera(lookfrom, lookat, vup, 30.0f, ASPECT_RATIO, aperture, dist_to_focus);
 }
 
 int main() {
     // 1. Init
-    const int height = static_cast<int>(IMAGE_WIDTH / ASPECT_RATIO);
+    // Reduced resolution for quick verification, increase for final render
+    const int height = static_cast<int>(IMAGE_WIDTH / ASPECT_RATIO); 
     const int channels = 3;
+    
     std::cout << "Rendering " << IMAGE_WIDTH << "x" << height << "..." << std::endl;
+    std::cout << "Samples: " << SAMPLES_PER_PIXEL << ", Max Depth: " << MAX_DEPTH << std::endl;
 
     Scene world;
     Camera cam(glm::vec3(0), glm::vec3(0,0,-1), glm::vec3(0,1,0), 90, ASPECT_RATIO); 
@@ -119,8 +123,8 @@ int main() {
         }
     }
 
-    stbi_write_png("texture_output.png", IMAGE_WIDTH, height, channels, image.data(), IMAGE_WIDTH * channels);
-    std::cout << "Done! Saved to texture_output.png" << std::endl;
+    stbi_write_png("mis_verification.png", IMAGE_WIDTH, height, channels, image.data(), IMAGE_WIDTH * channels);
+    std::cout << "Done! Saved to mis_verification.png" << std::endl;
 
     return 0;
 }
