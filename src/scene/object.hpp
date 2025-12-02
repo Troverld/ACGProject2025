@@ -15,6 +15,7 @@ class Material;
 struct HitRecord {
     glm::vec3 p;                  ///< Intersection point in world space.
     glm::vec3 normal;             ///< Surface normal at intersection.
+    glm::vec3 tangent;            ///< Surface tangent vector (aligned with U coordinate). 
     Material* mat_ptr;            ///< Pointer to the material of the hit object. Use a raw pointer instead of shared_ptr to reduce overhead.
     float t;                      ///< Ray parameter t where intersection occurred.
     bool front_face;              ///< True if ray hit the front face, false if back face.

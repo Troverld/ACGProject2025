@@ -42,6 +42,9 @@ public:
         glm::vec3 L(0.0f);           
         glm::vec3 throughput(1.0f); 
 
+        float last_bsdf_pdf = 0.0f; 
+        bool last_bounce_specular = true;
+
         for (int bounce = 0; bounce < max_depth; ++bounce) {
             HitRecord rec;
             
@@ -94,7 +97,7 @@ public:
                 break; 
             }
 
-            ScatterRecord srec;
+            ScatterRecord srec(rec.normal);
             if (!rec.mat_ptr->scatter(current_ray, rec, srec)) {
                 break;
             }
@@ -133,9 +136,10 @@ public:
 
                             float weight = power_heuristic(total_light_pdf, bsdf_pdf);
 
-                            float cos_theta = glm::dot(rec.normal, glm::normalize(to_light));
+                            float cos_theta = glm::dot(srec.shading_normal, glm::normalize(to_light));
                             if (cos_theta > 0.0f) {
-                                L += throughput * L_emitted * f_r * cos_theta * weight / total_light_pdf;
+                                if (glm::dot(rec.normal, glm::normalize(to_light)) > 0.0f) 
+                                    L += throughput * L_emitted * f_r * cos_theta * weight / total_light_pdf;
                             }
                         }
                     }
@@ -169,7 +173,4 @@ public:
 
 private:
     int max_depth;
-    // Helper mutable variables strictly for the loop logic, not class state
-    mutable float last_bsdf_pdf = 0.0f; 
-    mutable bool last_bounce_specular = true;
 };

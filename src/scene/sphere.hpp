@@ -52,6 +52,18 @@ public:
         glm::vec3 outward_normal = (rec.p - center) / radius;
         rec.set_face_normal(r, outward_normal);
         get_sphere_uv(outward_normal, rec.u, rec.v); 
+
+        // Compute Tangent for Spherical Mapping
+        // The tangent should point in the direction of increasing U (around the Y axis).
+        // Standard spherical mapping wraps around Y.
+        // We use a safe cross product to generate a tangent perpendicular to Normal and Up(0,1,0).
+        if (std::abs(outward_normal.y) > 0.999f) {
+            // Handle poles: if normal is (0,1,0), tangent is (1,0,0)
+            rec.tangent = glm::vec3(1.0f, 0.0f, 0.0f);
+        } else {
+            rec.tangent = glm::normalize(glm::cross(glm::vec3(0.0f, 1.0f, 0.0f), outward_normal));
+        }
+        
         rec.mat_ptr = mat_ptr.get();
         rec.object = this;
 

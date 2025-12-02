@@ -37,7 +37,11 @@ void setup_scene(Scene& world, Camera& cam) {
     // 1. Materials
     auto mat_ground   = std::make_shared<Lambertian>(glm::vec3(0.5f, 0.5f, 0.5f));
     auto mat_glass    = std::make_shared<Dielectric>(glm::vec3(1.0f), 1.5f);
-    auto mat_matte    = std::make_shared<Lambertian>(glm::vec3(0.4f, 0.2f, 0.1f)); // Reddish
+    // auto mat_matte    = std::make_shared<Lambertian>(glm::vec3(0.4f, 0.2f, 0.1f)); // Reddish
+
+    auto mat_bricks = std::make_shared<Lambertian>(std::make_shared<ImageTexture>("assets/texture/red_brick/red_brick_diff_1k.png"));
+    auto normal_tex = std::make_shared<ImageTexture>("assets/texture/red_brick/red_brick_nor_gl_1k.png");
+    mat_bricks->set_normal_map(normal_tex);
     auto mat_metal    = std::make_shared<Metal>(glm::vec3(0.7f, 0.6f, 0.5f), 0.1f); // Rough Gold
 
     // High intensity light (tests NEE dominant case)
@@ -52,7 +56,7 @@ void setup_scene(Scene& world, Camera& cam) {
 
     // Three main subjects
     world.add(std::make_shared<Sphere>(glm::vec3(-2.2f, 1.0f, 0.0f), 1.0f, mat_glass));
-    world.add(std::make_shared<Sphere>(glm::vec3( 0.0f, 1.0f, 0.0f), 1.0f, mat_matte));
+    world.add(std::make_shared<Sphere>(glm::vec3( 0.0f, 1.0f, 0.0f), 1.0f, mat_bricks));
     world.add(std::make_shared<Sphere>(glm::vec3( 2.2f, 1.0f, 0.0f), 1.0f, mat_metal));
 
     // Lights

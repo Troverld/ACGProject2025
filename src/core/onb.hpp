@@ -18,10 +18,36 @@ public:
         axis[2] = glm::normalize(n);
         
         // Check if n is parallel to the world Y axis to avoid singularity
-        glm::vec3 a = (fabs(w().x) > 0.9f) ? glm::vec3(0, 1, 0) : glm::vec3(1, 0, 0);
+        glm::vec3 a = (std::fabs(w().x) > 1.0f - EPSILON) ? glm::vec3(0, 1, 0) : glm::vec3(1, 0, 0);
         
         axis[1] = glm::normalize(glm::cross(w(), a));
         axis[0] = glm::cross(w(), v());
+    }
+
+    /**
+     * @brief Construct an ONB from a surface normal and a geometric tangent.
+     * Essential for Normal Mapping (TBN Matrix).
+     * 
+     * @param n Surface normal (World Space).
+     * @param tangent Geometric tangent (World Space).
+     */
+    Onb(const glm::vec3& n, const glm::vec3& tangent) {
+        axis[2] = glm::normalize(n); // w
+
+        // Gram-Schmidt orthogonalization: ensure u is perpendicular to w
+        // u = tangent - normal * dot(tangent, normal)
+        glm::vec3 u_raw = tangent - axis[2] * glm::dot(tangent, axis[2]);
+
+        // Robustness check: if tangent is parallel to normal (degenerate)
+        if (glm::length(u_raw) < EPSILON) {
+            // Fallback to arbitrary axis method
+            glm::vec3 a = (std::fabs(axis[2].x) > 1.0f - EPSILON) ? glm::vec3(0, 1, 0) : glm::vec3(1, 0, 0);
+            axis[1] = glm::normalize(glm::cross(axis[2], a));
+            axis[0] = glm::cross(axis[2], axis[1]);
+        } else {
+            axis[0] = glm::normalize(u_raw);        // u (Tangent)
+            axis[1] = glm::cross(axis[2], axis[0]); // v (Bitangent)
+        }
     }
 
     const glm::vec3& u() const { return axis[0]; }

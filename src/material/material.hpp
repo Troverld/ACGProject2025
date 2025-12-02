@@ -12,6 +12,8 @@ struct ScatterRecord {
     bool is_specular;       // Whether the surface is mirror.
     glm::vec3 attenuation;  // Albedo.
     float pdf;              // If the surface is not mirror, then the PDF of the sampled direction is recorded.
+    glm::vec3 shading_normal;  // Perturbed normal from normal map (if any).
+    ScatterRecord(glm::vec3 normal) : shading_normal(normal) {} // A normal initialization is a must. We should always have a valid normal.
 };
 
 
