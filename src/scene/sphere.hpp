@@ -107,7 +107,7 @@ public:
             solid_angle = 2 * PI * (1.0f - cos_theta_max);
         }
 
-        if (solid_angle < 1e-6f) return 0.0f;
+        if (solid_angle < EPSILON) return 0.0f;
 
         return 1.0f / solid_angle;
     }

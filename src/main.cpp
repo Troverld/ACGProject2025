@@ -16,6 +16,7 @@
 #include "scene/triangle.hpp"
 #include "scene/scene.hpp"
 #include "scene/camera.hpp"
+#include "scene/volume.hpp"
 #include "material/bsdf.hpp"
 #include "texture/checker.hpp" // Include checker
 #include "texture/perlin.hpp"  // Include perlin
@@ -24,9 +25,79 @@
 
 // --- Configuration ---
 const int MAX_DEPTH = 50;
-const int SAMPLES_PER_PIXEL = 500;
+const int SAMPLES_PER_PIXEL = 100;
 const int IMAGE_WIDTH = 800;
-const float ASPECT_RATIO = 16.0f / 9.0f;
+const float ASPECT_RATIO = 1.0f;
+// const float ASPECT_RATIO = 16.0f / 9.0f;
+
+/**
+ * @brief Constructs Cornell box and two smoke block.
+ * Demonstrates volumetric.
+ */
+void setup_cornell_box_smoke(Scene& world, Camera& cam) {
+    world.clear();
+
+    // Materials
+    auto red   = std::make_shared<Lambertian>(glm::vec3(0.65f, 0.05f, 0.05f));
+    auto white = std::make_shared<Lambertian>(glm::vec3(0.73f, 0.73f, 0.73f));
+    auto green = std::make_shared<Lambertian>(glm::vec3(0.12f, 0.45f, 0.15f));
+    auto light = std::make_shared<DiffuseLight>(glm::vec3(15.0f, 15.0f, 15.0f));
+
+    // Cornell Box Walls
+    // Floor
+    world.add(std::make_shared<Triangle>(glm::vec3(555,0,0), glm::vec3(0,0,0), glm::vec3(0,0,555), white));
+    world.add(std::make_shared<Triangle>(glm::vec3(555,0,555), glm::vec3(555,0,0), glm::vec3(0,0,555), white));
+    
+    // Ceiling
+    world.add(std::make_shared<Triangle>(glm::vec3(555,555,555), glm::vec3(0,555,555), glm::vec3(0,555,0), white));
+    world.add(std::make_shared<Triangle>(glm::vec3(0,555,0), glm::vec3(555,555,0), glm::vec3(555,555,555), white));
+
+    // Back Wall
+    world.add(std::make_shared<Triangle>(glm::vec3(555,0,555), glm::vec3(0,0,555), glm::vec3(0,555,555), white));
+    world.add(std::make_shared<Triangle>(glm::vec3(0,555,555), glm::vec3(555,555,555), glm::vec3(555,0,555), white));
+
+    // Left Wall (Green)
+    world.add(std::make_shared<Triangle>(glm::vec3(555,0,555), glm::vec3(555,555,555), glm::vec3(555,555,0), green));
+    world.add(std::make_shared<Triangle>(glm::vec3(555,555,0), glm::vec3(555,0,0), glm::vec3(555,0,555), green));
+
+    // Right Wall (Red)
+    world.add(std::make_shared<Triangle>(glm::vec3(0,0,555), glm::vec3(0,555,0), glm::vec3(0,555,555), red));
+    world.add(std::make_shared<Triangle>(glm::vec3(0,555,0), glm::vec3(0,0,555), glm::vec3(0,0,0), red));
+
+    // Light (Small square at top)
+    glm::vec3 l0(213, 554, 227);
+    glm::vec3 l1(343, 554, 227);
+    glm::vec3 l2(343, 554, 332);
+    glm::vec3 l3(213, 554, 332);
+    world.add(std::make_shared<Triangle>(l0, l1, l2, light));
+    world.add(std::make_shared<Triangle>(l0, l2, l3, light));
+
+    // --- Smoke / Fog Objects ---
+    
+    // Define bounds using Spheres for simplicity (or implement Box class later)
+    auto box1_boundary = std::make_shared<Sphere>(glm::vec3(130, 165, 65), 65.0f, white); // Placeholder geometry
+    auto box2_boundary = std::make_shared<Sphere>(glm::vec3(265, 165, 295), 80.0f, white);
+
+    // Create Volumetric Objects
+    // 0.01 density smoke (White)
+    world.add(std::make_shared<ConstantMedium>(box1_boundary, 0.1f, glm::vec3(1.0f, 1.0f, 1.0f)));
+    
+    // 0.01 density smoke (Black/Dark) - absorbs light
+    world.add(std::make_shared<ConstantMedium>(box2_boundary, 0.1f, glm::vec3(0.0f, 0.0f, 0.0f)));
+
+    // Background
+    world.set_background(std::make_shared<SolidColor>(0.2f, 0.2f, 0.2f));
+
+    // Camera setup for Cornell Box
+    glm::vec3 lookfrom(278, 278, -800);
+    glm::vec3 lookat(278, 278, 0);
+    glm::vec3 vup(0, 1, 0);
+    float dist_to_focus = 10.0f;
+    float aperture = 0.0f;
+    float vfov = 40.0f;
+
+    cam = Camera(lookfrom, lookat, vup, vfov, ASPECT_RATIO, aperture, dist_to_focus);
+}
 
 /**
  * @brief Constructs the scene.
@@ -130,7 +201,8 @@ int main() {
 
     Scene world;
     Camera cam(glm::vec3(0), glm::vec3(0,0,-1), glm::vec3(0,1,0), 90, ASPECT_RATIO); 
-    setup_scene(world, cam);
+    // setup_scene(world, cam);
+    setup_cornell_box_smoke(world, cam);
 
     world.build_bvh(0.0f, 1.0f); 
 
@@ -169,8 +241,8 @@ int main() {
         }
     }
 
-    stbi_write_png("fixed_firefly.png", IMAGE_WIDTH, height, channels, image.data(), IMAGE_WIDTH * channels);
-    std::cout << "Done! Saved to fixed_firefly.png" << std::endl;
+    stbi_write_png("cornell_box_smoke.png", IMAGE_WIDTH, height, channels, image.data(), IMAGE_WIDTH * channels);
+    std::cout << "Done! Saved to cornell_box_smoke.png" << std::endl;
 
     return 0;
 }
