@@ -13,14 +13,28 @@
 class Isotropic : public Material {
 public:
     /**
-     * @brief Construct with a solid color.
+     * @brief Construct with a solid color (non-emissive).
      */
-    Isotropic(glm::vec3 c) : albedo(std::make_shared<SolidColor>(c)) {}
+    Isotropic(glm::vec3 c)
+        : albedo(std::make_shared<SolidColor>(c)), emit(std::make_shared<SolidColor>(0.0f, 0.0f, 0.0f)), emissive(false) {}
 
     /**
-     * @brief Construct with a texture.
+     * @brief Construct with a texture (non-emissive).
      */
-    Isotropic(std::shared_ptr<Texture> a) : albedo(a) {}
+    Isotropic(std::shared_ptr<Texture> a)
+        : albedo(a), emit(std::make_shared<SolidColor>(0.0f, 0.0f, 0.0f)), emissive(false) {}
+
+    /**
+     * @brief Construct with Albedo and Emission (Texture).
+     */
+    Isotropic(std::shared_ptr<Texture> a, std::shared_ptr<Texture> e) 
+        : albedo(a), emit(e), emissive(true) {}
+    
+    /**
+     * @brief Construct with Albedo and Emission (Color).
+     */
+    Isotropic(glm::vec3 a, glm::vec3 e) 
+        : albedo(std::make_shared<SolidColor>(a)), emit(std::make_shared<SolidColor>(e)), emissive(true) {}
 
     /**
      * @brief Scatters light uniformly in a random direction.
@@ -63,6 +77,26 @@ public:
          return albedo->value(rec.u, rec.v, rec.p) * (1.0f / (4.0f * PI));
     }
 
+    /**
+     * @brief Handle Volumetric Emission.
+     * However, promoting a Volume to a Light source is very complex (requires sampling the volume volume).
+     * For now, we rely on implicit path tracing (rays randomly hitting the smoke) to pick up the light.
+     * So we can return true here, but be aware standard NEE won't target the volume unless you implement Light::sample_li for ConstantMedium.
+     */
+    virtual glm::vec3 emitted(float u, float v, const glm::vec3& p) const override {
+        return emit->value(u, v, p);
+    }
+    
+    /**
+     * @brief Check if volume is emissive.
+     * Note: Current Scene::add logic only promotes Objects to Lights if is_emissive is true.
+     */
+    virtual bool is_emissive() const override { 
+        return emissive;
+    }
+
 public:
     std::shared_ptr<Texture> albedo;
+    std::shared_ptr<Texture> emit;
+    bool emissive;
 };

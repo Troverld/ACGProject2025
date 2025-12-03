@@ -69,8 +69,8 @@ void setup_cornell_box_smoke(Scene& world, Camera& cam) {
     glm::vec3 l1(343, 554, 227);
     glm::vec3 l2(343, 554, 332);
     glm::vec3 l3(213, 554, 332);
-    world.add(std::make_shared<Triangle>(l0, l1, l2, light));
-    world.add(std::make_shared<Triangle>(l0, l2, l3, light));
+    // world.add(std::make_shared<Triangle>(l0, l1, l2, light));
+    // world.add(std::make_shared<Triangle>(l0, l2, l3, light));
 
     // --- Smoke / Fog Objects ---
     
@@ -80,10 +80,10 @@ void setup_cornell_box_smoke(Scene& world, Camera& cam) {
 
     // Create Volumetric Objects
     // 0.01 density smoke (White)
-    world.add(std::make_shared<ConstantMedium>(box1_boundary, 0.1f, glm::vec3(1.0f, 1.0f, 1.0f)));
+    world.add(std::make_shared<ConstantMedium>(box1_boundary, 0.003f, glm::vec3(1.0f, 1.0f, 1.0f), glm::vec3(2.0f, 0.75f, 0.25f)));
     
     // 0.01 density smoke (Black/Dark) - absorbs light
-    world.add(std::make_shared<ConstantMedium>(box2_boundary, 0.1f, glm::vec3(0.0f, 0.0f, 0.0f)));
+    world.add(std::make_shared<ConstantMedium>(box2_boundary, 0.01f, glm::vec3(0.0f, 0.0f, 0.0f)));
 
     // Background
     world.set_background(std::make_shared<SolidColor>(0.2f, 0.2f, 0.2f));

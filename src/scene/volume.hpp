@@ -34,6 +34,21 @@ public:
     ConstantMedium(std::shared_ptr<Object> b, float d, glm::vec3 c)
         : boundary(b), neg_inv_density(-1.0f / d), phase_function(std::make_shared<Isotropic>(c)) {}
 
+    /**
+     * @brief Construct a Glowing Volume.
+     * @param emit_color The color/intensity of the light emitted by the smoke.
+     */
+    ConstantMedium(std::shared_ptr<Object> b, float d, glm::vec3 color, glm::vec3 emit_color)
+        : boundary(b), neg_inv_density(-1.0f / d), 
+          phase_function(std::make_shared<Isotropic>(color, emit_color)) {}
+          
+    /**
+     * @brief Construct a Glowing Volume (Texture based).
+     */
+    ConstantMedium(std::shared_ptr<Object> b, float d, std::shared_ptr<Texture> a, std::shared_ptr<Texture> emit_tex)
+        : boundary(b), neg_inv_density(-1.0f / d), 
+          phase_function(std::make_shared<Isotropic>(a, emit_tex)) {}
+
 
     virtual bool intersect(const Ray& r, float t_min, float t_max, HitRecord& rec) const override {
         // Print occasional debug info locally if needed, but keep clean for perf
