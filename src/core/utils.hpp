@@ -23,6 +23,9 @@ const float EPSILON = 1e-6f;
 // Ray intersection bias to prevent shadow acne (self-intersection)
 const float SHADOW_EPSILON = 1e-3f;
 
+// Padding for bounding box
+const float PADDING_EPSILON = 1e-3f;
+
 /**
  * @brief Generates a random float in range [0.0, 1.0).
  * 

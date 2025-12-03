@@ -97,8 +97,8 @@ public:
 
         // Add a small epsilon to avoid zero-thickness boxes (e.g. flat triangle on axis plane)
         output_box = AABB(
-            glm::vec3(min_x, min_y, min_z) - glm::vec3(EPSILON), 
-            glm::vec3(max_x, max_y, max_z) + glm::vec3(EPSILON)
+            glm::vec3(min_x, min_y, min_z) - glm::vec3(PADDING_EPSILON), 
+            glm::vec3(max_x, max_y, max_z) + glm::vec3(PADDING_EPSILON)
         );
         return true;
     }
