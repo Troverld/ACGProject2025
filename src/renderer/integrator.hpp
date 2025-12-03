@@ -102,7 +102,7 @@ public:
             // 3. Direct Light Sampling (Next Event Estimation)
             if (!srec.is_specular && !scene.lights.empty()) {
                 int light_idx = random_int(0, static_cast<int>(scene.lights.size()) - 1);
-                auto light = scene.lights[light_idx];
+                const auto& light = scene.lights[light_idx];
                 float light_weight = static_cast<float>(scene.lights.size()); // 1 / (1/N)
 
                 glm::vec3 to_light;
@@ -165,7 +165,7 @@ public:
 private:
     int max_depth;
 
-    void clamp_radiance(glm::vec3 &L, float limit = 3.0f) const {
+    void clamp_radiance(glm::vec3 &L, float limit = 5.0f) const {
         float lum = glm::length(L);
         if (lum > limit) {
             L = L * (limit / lum);

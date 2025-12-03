@@ -24,7 +24,7 @@
 
 // --- Configuration ---
 const int MAX_DEPTH = 50;
-const int SAMPLES_PER_PIXEL = 100;
+const int SAMPLES_PER_PIXEL = 500;
 const int IMAGE_WIDTH = 800;
 const float ASPECT_RATIO = 16.0f / 9.0f;
 
@@ -84,13 +84,13 @@ void setup_scene(Scene& world, Camera& cam) {
     glm::vec3 p3(-1.2f, 1.4f, 1.9f); // Top
 
     // Base Triangle (Order for normal pointing down/out)
-    world.add(std::make_shared<Triangle>(p2, p1, p0, mat_light_dim)); 
+    world.add(std::make_shared<Triangle>(p2, p1, p0, mat_bricks)); 
     // Side 1
-    world.add(std::make_shared<Triangle>(p0, p1, p3, mat_light_dim));
+    world.add(std::make_shared<Triangle>(p0, p1, p3, mat_bricks));
     // Side 2
-    world.add(std::make_shared<Triangle>(p1, p2, p3, mat_light_dim));
+    world.add(std::make_shared<Triangle>(p1, p2, p3, mat_bricks));
     // Side 3
-    world.add(std::make_shared<Triangle>(p2, p0, p3, mat_light_dim));
+    world.add(std::make_shared<Triangle>(p2, p0, p3, mat_bricks));
 
     // Three main subjects
     world.add(std::make_shared<Sphere>(glm::vec3(-2.2f, 1.0f, 0.0f), 1.0f, mat_glass));
@@ -106,7 +106,7 @@ void setup_scene(Scene& world, Camera& cam) {
     world.add(std::make_shared<Sphere>(glm::vec3(-4.0f, 3.0f, -3.0f), 1.5f, mat_light_dim));
 
     // Background (Black to verify lighting strictly comes from emissive objects)
-    world.set_background(std::make_shared<SolidColor>(0.0f, 0.0f, 0.0f));
+    world.set_background(std::make_shared<SolidColor>(0.2f, 0.2f, 0.2f));
 
     // 3. Camera Setup
     glm::vec3 lookfrom(0.0f, 4.0f, 8.0f);
@@ -132,13 +132,15 @@ int main() {
     Camera cam(glm::vec3(0), glm::vec3(0,0,-1), glm::vec3(0,1,0), 90, ASPECT_RATIO); 
     setup_scene(world, cam);
 
+    world.build_bvh(0.0f, 1.0f); 
+
     // 2. Integrator
     PathIntegrator integrator(MAX_DEPTH);
 
     // 3. Render Loop
     std::vector<unsigned char> image(IMAGE_WIDTH * height * channels);
 
-    #pragma omp parallel for schedule(dynamic, 1)
+    #pragma omp parallel for schedule(guided)
     for (int j = 0; j < height; ++j) {
         if (j % 10 == 0) std::cout << "Scanning line " << j << " remaining: " << height - j << std::endl;
 

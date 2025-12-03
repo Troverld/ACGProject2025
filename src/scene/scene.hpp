@@ -4,6 +4,7 @@
 #include "light.hpp"
 #include <vector>
 #include <memory>
+#include "../accel/BVH.hpp"
 #include "../texture/texture.hpp"
 /**
  * @brief A container for all objects in the scene.
@@ -22,6 +23,7 @@ public:
     void clear() { 
         objects.clear(); 
         lights.clear();
+        bvh_root = nullptr;
     }
 
     /**
@@ -36,6 +38,21 @@ public:
         if (object->get_material() && object->get_material()->is_emissive()) {
             lights.push_back(std::make_shared<DiffuseAreaLight>(object));
         }
+        bvh_root = nullptr; 
+    }
+
+    /**
+     * @brief Construct the BVH structure.
+     * MUST be called before rendering starts for acceleration to take effect.
+     * 
+     * @param t0 Start time for motion blur.
+     * @param t1 End time for motion blur.
+     */
+    void build_bvh(float t0 = 0.0f, float t1 = 1.0f) {
+        if (objects.empty()) return;
+        
+        std::cout << "Building BVH for " << objects.size() << " objects..." << std::endl;
+        bvh_root = std::make_shared<BVHNode>(objects, t0, t1);
     }
 
     /**
@@ -43,6 +60,11 @@ public:
      * Finds the closest intersection.
      */
     virtual bool intersect(const Ray& r, float t_min, float t_max, HitRecord& rec) const override {
+        // Use BVH if available
+        if (bvh_root) {
+            return bvh_root->intersect(r, t_min, t_max, rec);
+        }
+
         HitRecord temp_rec;
         bool hit_anything = false;
         float closest_so_far = t_max;
@@ -62,6 +84,7 @@ public:
      * @brief Find the bounding box of the scene
      */
     virtual bool bounding_box(float time0, float time1, AABB& output_box) const override {
+        if (bvh_root) return bvh_root->bounding_box(time0, time1, output_box);
         if (objects.empty()) return false;
 
         AABB temp_box;
@@ -107,4 +130,5 @@ public:
     std::vector<std::shared_ptr<Object>> objects;
     std::vector<std::shared_ptr<Light>> lights;
     std::shared_ptr<Texture> background_texture; // Added member
+    std::shared_ptr<Object> bvh_root; 
 };
