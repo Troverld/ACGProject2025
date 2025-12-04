@@ -7,8 +7,10 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 # --- 1. 查找 OpenMP ---
 find_package(OpenMP)
 
-# --- 1. 自动下载并配置 GLM (FetchContent) ---
+# --- 2. 自动下载并配置依赖库 (FetchContent) ---
 include(FetchContent)
+
+# GLM
 FetchContent_Declare(
     glm
     GIT_REPOSITORY https://github.com/g-truc/glm.git
@@ -16,26 +18,37 @@ FetchContent_Declare(
 )
 FetchContent_MakeAvailable(glm)
 
-# --- 2. 配置包含目录 ---
+# TinyObjLoader (用于加载 OBJ 模型)
+FetchContent_Declare(
+    tinyobjloader
+    GIT_REPOSITORY https://github.com/tinyobjloader/tinyobjloader.git
+    GIT_TAG        release
+)
+FetchContent_MakeAvailable(tinyobjloader)
+
+# --- 3. 配置包含目录 ---
 include_directories(${CMAKE_SOURCE_DIR}/src)
 include_directories(${CMAKE_SOURCE_DIR}/external)
+# 包含 tinyobjloader 的头文件路径
+include_directories(${tinyobjloader_SOURCE_DIR})
 
-# --- 3. 配置输出路径 (强制所有配置都输出到 bin) ---
+# --- 4. 配置输出路径 ---
 set(OUTPUT_DIR ${CMAKE_SOURCE_DIR}/bin)
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${OUTPUT_DIR})
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY_DEBUG ${OUTPUT_DIR})
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY_RELEASE ${OUTPUT_DIR})
 
-# --- 4. 添加源文件 ---
+# --- 5. 添加源文件 ---
 set(SOURCES
     src/main.cpp
     src/core/stb_impl.cpp
+    src/core/loader_impl.cpp  # 新增：用于实现 tinyobjloader
 )
 
-# --- 5. 生成可执行文件 ---
+# --- 6. 生成可执行文件 ---
 add_executable(MyPathTracer ${SOURCES})
 
-# --- 6. 链接库与编译选项 ---
+# --- 7. 链接库 ---
 target_link_libraries(MyPathTracer PRIVATE glm::glm)
 
 if(OpenMP_CXX_FOUND)

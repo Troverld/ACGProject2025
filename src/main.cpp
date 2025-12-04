@@ -14,6 +14,7 @@
 #include "core/ray.hpp"
 #include "scene/sphere.hpp"
 #include "scene/triangle.hpp"
+#include "scene/mesh.hpp"
 #include "scene/scene.hpp"
 #include "scene/camera.hpp"
 #include "scene/volume.hpp"
@@ -26,10 +27,10 @@
 
 // --- Configuration ---
 const int MAX_DEPTH = 50;
-const int NUM_PHOTON = 5000000; // For photon mapping
+const int NUM_PHOTON = 25000000; // For photon mapping
 const float CAUSTIC_RADIUS = 0.1f;
 const float GLOBAL_RADIUS = 0.4f;
-const int FINAL_GATHER_BOUND = 3;
+const int FINAL_GATHER_BOUND = 5;
 const int SAMPLES_PER_PIXEL = 250;
 const int IMAGE_WIDTH = 800;
 const float ASPECT_RATIO = 16.0f / 9.0f;
@@ -118,6 +119,7 @@ void setup_scene(Scene& world, Camera& cam) {
     );
     auto mat_ground   = std::make_shared<Lambertian>(glm::vec3(0.5f, 0.5f, 0.5f));
     auto mat_glass    = std::make_shared<Dielectric>(glm::vec3(1.0f), 1.5f);
+    auto mat_gold   = std::make_shared<Metal>(glm::vec3(1.0f, 0.84f, 0.0f), 0.1f);
     // auto mat_matte    = std::make_shared<Lambertian>(glm::vec3(0.4f, 0.2f, 0.1f)); // Reddish
 
     auto mat_bricks = std::make_shared<Lambertian>(std::make_shared<ImageTexture>("assets/texture/red_brick/red_brick_diff_1k.png"));
@@ -135,12 +137,12 @@ void setup_scene(Scene& world, Camera& cam) {
     
     // Ground (Huge sphere to approximate a plane)
     // world.add(std::make_shared<Sphere>(glm::vec3(0.0f, -1000.0f, 0.0f), 1000.0f, mat_ground));
-    glm::vec3 v0(-20.0f, 0.0f, -20.0f);
-    glm::vec3 v1( 20.0f, 0.0f, -20.0f);
-    glm::vec3 v2( 20.0f, 0.0f,  20.0f);
-    glm::vec3 v3(-20.0f, 0.0f,  20.0f);
+    glm::vec3 v0(-200.0f, 0.0f, -200.0f);
+    glm::vec3 v1( 200.0f, 0.0f, -200.0f);
+    glm::vec3 v2( 200.0f, 0.0f,  200.0f);
+    glm::vec3 v3(-200.0f, 0.0f,  200.0f);
 
-    float uv_scale = 10.0f;
+    float uv_scale = 100.0f;
     glm::vec2 t0(0, 0);
     glm::vec2 t1(uv_scale, 0);
     glm::vec2 t2(uv_scale, uv_scale);
@@ -153,10 +155,10 @@ void setup_scene(Scene& world, Camera& cam) {
 
      // --- Tetrahedron ---
     // Center at (-1.5, 0.5, 1.0), Radius ~1
-    glm::vec3 p0(-1.2f, 0.0f, 2.5f); // Base 1
-    glm::vec3 p1(-0.2f, 0.0f, 1.5f); // Base 2
-    glm::vec3 p2(-2.2f, 0.0f, 1.5f); // Base 3
-    glm::vec3 p3(-1.2f, 1.4f, 1.9f); // Top
+    glm::vec3 p0(-12.0f,  0.0f, 25.0f); // Base 1
+    glm::vec3 p1(- 2.0f,  0.0f, 15.0f); // Base 2
+    glm::vec3 p2(-22.0f,  0.0f, 15.0f); // Base 3
+    glm::vec3 p3(-12.0f, 14.0f, 19.0f); // Top
 
     // Base Triangle (Order for normal pointing down/out)
     world.add(std::make_shared<Triangle>(p2, p1, p0, mat_bricks)); 
@@ -168,24 +170,34 @@ void setup_scene(Scene& world, Camera& cam) {
     world.add(std::make_shared<Triangle>(p2, p0, p3, mat_bricks));
 
     // Three main subjects
-    world.add(std::make_shared<Sphere>(glm::vec3(-2.2f, 1.0f, 0.0f), 1.0f, mat_glass));
-    // world.add(std::make_shared<Sphere>(glm::vec3( 0.0f, 1.0f, 0.0f), 1.0f, mat_checker));
-    world.add(std::make_shared<Sphere>(glm::vec3( 2.2f, 1.0f, 0.0f), 1.0f, mat_metal));
+    world.add(std::make_shared<Sphere>(glm::vec3(-22.0f, 10.0f,  0.0f), 10.0f, mat_glass));
+    // world.add(std::make_shared<Sphere>(glm::vec3(  0.0f, 10.0f,  0.0f), 10.0f, mat_checker));
+    world.add(std::make_shared<Sphere>(glm::vec3( 22.0f, 10.0f,  0.0f), 10.0f, mat_metal));
+
+    auto bunny = std::make_shared<Mesh>(
+        "assets/model/bunny_200_subdivided_1.obj",
+        mat_gold,
+        glm::vec3(0.0f, 0.0f, 0.0f),
+        50.0f,
+        glm::vec3(0, 1, 0),
+        180.0f
+    );
+    world.add(bunny);
 
     // Lights
     // Small strong light above
-    world.add(std::make_shared<Sphere>(glm::vec3(0.0f, 5.0f, 0.0f), 0.5f, mat_light_strong));
+    world.add(std::make_shared<Sphere>(glm::vec3(0.0f, 50.0f, 0.0f), 5.0f, mat_light_strong));
     // Small strong light front
-    world.add(std::make_shared<Sphere>(glm::vec3(4.0f, 3.0f, 4.0f), 0.7f, mat_light_dim));
+    world.add(std::make_shared<Sphere>(glm::vec3(40.0f, 30.0f, 40.0f), 7.0f, mat_light_dim));
     // Large dim light to the side/back
-    world.add(std::make_shared<Sphere>(glm::vec3(-4.0f, 3.0f, -3.0f), 1.5f, mat_light_dim));
+    world.add(std::make_shared<Sphere>(glm::vec3(-40.0f, 30.0f, -30.0f), 15.0f, mat_light_dim));
 
     // Background (Black to verify lighting strictly comes from emissive objects)
     world.set_background(std::make_shared<SolidColor>(0.0f, 0.0f, 0.0f));
 
     // 3. Camera Setup
-    glm::vec3 lookfrom(0.0f, 4.0f, -8.0f);
-    glm::vec3 lookat(0.0f, 1.0f, 0.0f);
+    glm::vec3 lookfrom(0.0f, 40, -80);
+    glm::vec3 lookat(0.0f, 10, 0.0f);
     glm::vec3 vup(0.0f, 1.0f, 0.0f);
     float dist_to_focus = glm::length(lookfrom - lookat);
     float aperture = 0.05f; 
@@ -246,8 +258,8 @@ int main() {
         }
     }
 
-    stbi_write_png("photon_mapping.png", IMAGE_WIDTH, height, channels, image.data(), IMAGE_WIDTH * channels);
-    std::cout << "Done! Saved to photon_mapping.png" << std::endl;
+    stbi_write_png("with_bunny.png", IMAGE_WIDTH, height, channels, image.data(), IMAGE_WIDTH * channels);
+    std::cout << "Done! Saved to with_bunny.png" << std::endl;
 
     return 0;
 }
