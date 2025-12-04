@@ -28,7 +28,7 @@ public:
     /**
      * @brief Calculates the radiance for a given ray.
      */
-    virtual glm::vec3 estimate_radiance(const Ray& r, const Scene& scene, int depth) const = 0;
+    virtual glm::vec3 estimate_radiance(const Ray& r, const Scene& scene) const = 0;
 };
 
 /**
@@ -38,7 +38,7 @@ class PathIntegrator : public Integrator {
 public:
     PathIntegrator(int max_d) : max_depth(max_d) {}
 
-    glm::vec3 estimate_radiance(const Ray& start_ray, const Scene& scene, int depth) const {
+    glm::vec3 estimate_radiance(const Ray& start_ray, const Scene& scene) const {
         Ray current_ray = start_ray;
         glm::vec3 L(0.0f);           
         glm::vec3 throughput(1.0f); 
@@ -100,45 +100,12 @@ public:
             last_bounce_specular = srec.is_specular;
 
             // 3. Direct Light Sampling (Next Event Estimation)
-            if (!srec.is_specular && !scene.lights.empty()) {
-                int light_idx = random_int(0, static_cast<int>(scene.lights.size()) - 1);
-                const auto& light = scene.lights[light_idx];
-                float light_weight = static_cast<float>(scene.lights.size()); // 1 / (1/N)
-
-                glm::vec3 to_light;
-                float light_pdf; // PDF of sampling this point on light
-                float dist;
-                
-                glm::vec3 L_emitted = light->sample_li(rec.p, to_light, light_pdf, dist);
-
-                if (light_pdf > EPSILON && !near_zero(L_emitted)) {
-                    Ray shadow_ray(rec.p, to_light, current_ray.time());
-                    HitRecord shadow_rec;
-                    
-                    if (!scene.intersect(shadow_ray, SHADOW_EPSILON, dist - SHADOW_EPSILON, shadow_rec)) {
-                        glm::vec3 f_r = rec.mat_ptr->eval(current_ray, rec, shadow_ray, srec.shading_normal);
-                        
-                        if (!near_zero(f_r)) {
-                            // Calculate BSDF PDF for this NEE direction
-                            float bsdf_pdf = rec.mat_ptr->scattering_pdf(current_ray, rec, shadow_ray, srec.shading_normal);
-                            
-                            // MIS Weight: balance Light sampling vs BSDF sampling
-                            // We selected a specific light (prob 1/N), then a point on it (light_pdf).
-                            // Total light technique PDF = (1/N) * light_pdf
-                            float total_light_pdf = light_pdf / light_weight; 
-
-                            float weight = power_heuristic(total_light_pdf, bsdf_pdf);
-
-                            float cos_theta = glm::dot(srec.shading_normal, glm::normalize(to_light));
-                            if (cos_theta > 0.0f) {
-                                // if (glm::dot(rec.normal, glm::normalize(to_light)) > 0.0f) 
-                                glm::vec3 nee_contribution = throughput * L_emitted * f_r * cos_theta * weight / total_light_pdf;
-                                clamp_radiance(nee_contribution);
-                                L += nee_contribution;
-                            }
-                        }
-                    }
-                }
+            if (!srec.is_specular) {
+                glm::vec3 L_direct = sample_one_light(scene, rec, srec, current_ray);
+                // Apply throughput to the direct light contribution
+                glm::vec3 direct_contribution = throughput * L_direct;
+                clamp_radiance(direct_contribution);
+                L += direct_contribution;
             }
 
             // 4. Update Throughput for Indirect Bounce
@@ -162,10 +129,61 @@ public:
         return L;
     }
 
-private:
+protected:
     int max_depth;
 
-    void clamp_radiance(glm::vec3 &L, float limit = 5.0f) const {
+    /**
+     * @brief Samples a random light source for direct lighting (Next Event Estimation).
+     * Exposed for use in PhotonIntegrator.
+     * 
+     * @param scene The scene reference.
+     * @param rec The hit record of the current surface point.
+     * @param srec The scatter record (contains material info).
+     * @param time The time of the ray (for motion blur).
+     * @return glm::vec3 The UNWEIGHTED direct radiance (not multiplied by path throughput yet).
+     */
+    glm::vec3 sample_one_light(const Scene& scene, const HitRecord& rec, const ScatterRecord& srec, const Ray& current_ray) const {
+        if (scene.lights.empty()) return glm::vec3(0.0f);
+        
+        int light_idx = random_int(0, static_cast<int>(scene.lights.size()) - 1);
+        const auto& light = scene.lights[light_idx];
+        float light_weight = static_cast<float>(scene.lights.size()); // 1 / (1/N)
+
+        glm::vec3 to_light;
+        float light_pdf; // PDF of sampling this point on light
+        float dist;
+        
+        glm::vec3 L_emitted = light->sample_li(rec.p, to_light, light_pdf, dist);
+
+        if (light_pdf > EPSILON && !near_zero(L_emitted)) {
+            Ray shadow_ray(rec.p, to_light, current_ray.time());
+            HitRecord shadow_rec;
+            
+            if (!scene.intersect(shadow_ray, SHADOW_EPSILON, dist - SHADOW_EPSILON, shadow_rec)) {
+                glm::vec3 f_r = rec.mat_ptr->eval(current_ray, rec, shadow_ray, srec.shading_normal);
+                
+                if (!near_zero(f_r)) {
+                    // Calculate BSDF PDF for this NEE direction
+                    float bsdf_pdf = rec.mat_ptr->scattering_pdf(current_ray, rec, shadow_ray, srec.shading_normal);
+                    
+                    // MIS Weight: balance Light sampling vs BSDF sampling
+                    // We selected a specific light (prob 1/N), then a point on it (light_pdf).
+                    // Total light technique PDF = (1/N) * light_pdf
+                    float total_light_pdf = light_pdf / light_weight; 
+
+                    float weight = power_heuristic(total_light_pdf, bsdf_pdf);
+
+                    float cos_theta = glm::dot(srec.shading_normal, glm::normalize(to_light));
+                    if (cos_theta > 0.0f) {
+                        // if (glm::dot(rec.normal, glm::normalize(to_light)) > 0.0f) 
+                        return L_emitted * f_r * cos_theta * weight / total_light_pdf;
+                    }
+                }
+            }
+        }
+        return glm::vec3(0.0f);
+    }
+    void clamp_radiance(glm::vec3 &L, float limit = 10.0f) const {
         float lum = glm::length(L);
         if (lum > limit) {
             L = L * (limit / lum);

@@ -51,39 +51,42 @@ In this section, you are required to implement a renderer, which can be either h
 目前的代码结构规划如下（可能改动）：
 
 MyPathTracer/
-├── CMakeLists.txt              // 构建系统
-├── external/                   // 第三方库
-│   ├── stb_image_write.h       // 用于输出图片
-│   └── tiny_obj_loader.h       // (可选) 用于加载外部模型
-├── src/
-│   ├── main.cpp                // 程序入口
-│   ├── core/                   // 核心数学与基础数据结构
-│   │   ├── ray.hpp             // 光线定义
-│   │   ├── onb.hpp             // 正交基
-│   │   └── utils.hpp           // 随机数生成、常量定义
-│   ├── scene/                  // 场景定义
-│   │   ├── scene.hpp           // 管理所有物体和灯光
-│   │   ├── light.hpp           // 灯光
-│   │   ├── object.hpp          // 物体基类
-│   │   ├── sphere.hpp          // 球体 (基础几何)
-│   │   ├── triangle.hpp        // 三角形 (网格几何)
-│   │   ├── mesh.hpp            // 三角形网格 (加载 .obj)
-│   │   ├── volume.hpp          // 包括一个几何体边界和体内材质（处理体积内散射）
-│   │   └── camera.hpp          // 相机模型 (负责生成光线、抗锯齿)
-│   ├── accel/                  // 加速结构
-│   │   ├── AABB.hpp            // 轴对齐包围盒
-│   │   └── BVH.hpp             // 核心：BVH 构建与遍历
-│   ├── material/               // 材质系统
-│   │   ├── material.hpp        // 材质基类
-│   │   ├── phase_function.hpp  // 相函数实现
-│   │   └── BSDF.hpp            // 具体材质实现 (Diffuse, Specular, Glass...)
-│   ├── texture/                // 纹理系统 (支持非均匀介质)
-│   │   ├── texture.hpp         // 纹理基类 (输入 UV 或 Point p，输出颜色)
-│   │   ├── uv.hpp              // UV
-│   │   ├── solid_color.hpp     // 纯色纹理 (用于 Homogeneous Volume)
-│   │   └── perlin.hpp          // 柏林噪声 (用于 Inhomogeneous Volume / 云 / 烟)
-│   └── renderer/               // 渲染管线
-│       └── integrator.hpp      // 路径追踪核心算法
+├── CMakeLists.txt                // 构建系统
+├── external/                     // 第三方库
+│   ├── stb_image_write.h         // 用于输出图片
+│   └── tiny_obj_loader.h         // (可选) 用于加载外部模型
+├── src/  
+│   ├── main.cpp                  // 程序入口
+│   ├── core/                     // 核心数学与基础数据结构
+│   │   ├── ray.hpp               // 光线定义
+│   │   ├── onb.hpp               // 正交基
+│   │   ├── photon.hpp            // 用于 photon mapping
+│   │   └── utils.hpp             // 随机数生成、常量定义
+│   ├── scene/                    // 场景定义
+│   │   ├── scene.hpp             // 管理所有物体和灯光
+│   │   ├── light.hpp             // 灯光
+│   │   ├── object.hpp            // 物体基类
+│   │   ├── sphere.hpp            // 球体 (基础几何)
+│   │   ├── triangle.hpp          // 三角形 (网格几何)
+│   │   ├── mesh.hpp              // 三角形网格 (加载 .obj)
+│   │   ├── volume.hpp            // 包括一个几何体边界和体内材质（处理体积内散射）
+│   │   └── camera.hpp            // 相机模型 (负责生成光线、抗锯齿)
+│   ├── accel/                    // 加速结构
+│   │   ├── AABB.hpp              // 轴对齐包围盒
+│   │   ├── kdtree.hpp            // KD-tree构建，用于photon mapping
+│   │   └── BVH.hpp               // 核心：BVH 构建与遍历
+│   ├── material/                 // 材质系统
+│   │   ├── material.hpp          // 材质基类
+│   │   ├── phase_function.hpp    // 相函数实现
+│   │   └── BSDF.hpp              // 具体材质实现 (Diffuse, Specular, Glass...)
+│   ├── texture/                  // 纹理系统 (支持非均匀介质)
+│   │   ├── texture.hpp           // 纹理基类 (输入 UV 或 Point p，输出颜色)
+│   │   ├── uv.hpp                // UV
+│   │   ├── solid_color.hpp       // 纯色纹理 (用于 Homogeneous Volume)
+│   │   └── perlin.hpp            // 柏林噪声 (用于 Inhomogeneous Volume / 云 / 烟)
+│   └── renderer/                 // 渲染管线
+│       ├── integrator.hpp        // 路径追踪核心算法
+│       └── photon_integrator.hpp // 使用photon mapping的路径追踪
 
 目前的约定如下：
 

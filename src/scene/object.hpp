@@ -84,6 +84,16 @@ public:
     virtual glm::vec3 random_pointing_vector(const glm::vec3& origin) const {
         return glm::vec3(1, 0, 0);
     }
+
+    /**
+     * @brief Randomly sample a point and normal on the surface of object.
+     * @param pos [out] Sampled point (world space)
+     * @param normal [out] Geometric normal (normalized).
+     * @param pdf_area [out] pdf of area.
+     */
+    virtual void sample_surface(glm::vec3& pos, glm::vec3& normal, float& pdf_area) const {
+        pdf_area = 0.0f; 
+    }
     
     /**
      * @brief Helper to access material pointer.

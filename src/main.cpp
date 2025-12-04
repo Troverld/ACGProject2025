@@ -22,13 +22,17 @@
 #include "texture/perlin.hpp"  // Include perlin
 #include "texture/image_texture.hpp" 
 #include "renderer/integrator.hpp"
+#include "renderer/photon_integrator.hpp"
 
 // --- Configuration ---
 const int MAX_DEPTH = 50;
-const int SAMPLES_PER_PIXEL = 100;
+const int NUM_PHOTON = 5000000; // For photon mapping
+const float CAUSTIC_RADIUS = 0.1f;
+const float GLOBAL_RADIUS = 0.4f;
+const int FINAL_GATHER_BOUND = 3;
+const int SAMPLES_PER_PIXEL = 250;
 const int IMAGE_WIDTH = 800;
-const float ASPECT_RATIO = 1.0f;
-// const float ASPECT_RATIO = 16.0f / 9.0f;
+const float ASPECT_RATIO = 16.0f / 9.0f;
 
 /**
  * @brief Constructs Cornell box and two smoke block.
@@ -165,7 +169,7 @@ void setup_scene(Scene& world, Camera& cam) {
 
     // Three main subjects
     world.add(std::make_shared<Sphere>(glm::vec3(-2.2f, 1.0f, 0.0f), 1.0f, mat_glass));
-    world.add(std::make_shared<Sphere>(glm::vec3( 0.0f, 1.0f, 0.0f), 1.0f, mat_checker));
+    // world.add(std::make_shared<Sphere>(glm::vec3( 0.0f, 1.0f, 0.0f), 1.0f, mat_checker));
     world.add(std::make_shared<Sphere>(glm::vec3( 2.2f, 1.0f, 0.0f), 1.0f, mat_metal));
 
     // Lights
@@ -177,10 +181,10 @@ void setup_scene(Scene& world, Camera& cam) {
     world.add(std::make_shared<Sphere>(glm::vec3(-4.0f, 3.0f, -3.0f), 1.5f, mat_light_dim));
 
     // Background (Black to verify lighting strictly comes from emissive objects)
-    world.set_background(std::make_shared<SolidColor>(0.2f, 0.2f, 0.2f));
+    world.set_background(std::make_shared<SolidColor>(0.0f, 0.0f, 0.0f));
 
     // 3. Camera Setup
-    glm::vec3 lookfrom(0.0f, 4.0f, 8.0f);
+    glm::vec3 lookfrom(0.0f, 4.0f, -8.0f);
     glm::vec3 lookat(0.0f, 1.0f, 0.0f);
     glm::vec3 vup(0.0f, 1.0f, 0.0f);
     float dist_to_focus = glm::length(lookfrom - lookat);
@@ -201,18 +205,19 @@ int main() {
 
     Scene world;
     Camera cam(glm::vec3(0), glm::vec3(0,0,-1), glm::vec3(0,1,0), 90, ASPECT_RATIO); 
-    // setup_scene(world, cam);
-    setup_cornell_box_smoke(world, cam);
+    setup_scene(world, cam);
+    // setup_cornell_box_smoke(world, cam);
 
     world.build_bvh(0.0f, 1.0f); 
 
     // 2. Integrator
-    PathIntegrator integrator(MAX_DEPTH);
+    // PathIntegrator integrator(MAX_DEPTH);
+    PhotonIntegrator integrator(MAX_DEPTH, NUM_PHOTON, CAUSTIC_RADIUS, GLOBAL_RADIUS, FINAL_GATHER_BOUND, world);
 
     // 3. Render Loop
     std::vector<unsigned char> image(IMAGE_WIDTH * height * channels);
 
-    #pragma omp parallel for schedule(guided)
+    #pragma omp parallel for schedule(dynamic)
     for (int j = 0; j < height; ++j) {
         if (j % 10 == 0) std::cout << "Scanning line " << j << " remaining: " << height - j << std::endl;
 
@@ -224,7 +229,7 @@ int main() {
                 float v = (float(height - 1 - j) + random_float()) / height;
 
                 Ray r = cam.get_ray(u, v);
-                pixel_color += integrator.estimate_radiance(r, world, MAX_DEPTH);
+                pixel_color += integrator.estimate_radiance(r, world);
             }
             
             pixel_color /= float(SAMPLES_PER_PIXEL);
@@ -241,8 +246,8 @@ int main() {
         }
     }
 
-    stbi_write_png("cornell_box_smoke.png", IMAGE_WIDTH, height, channels, image.data(), IMAGE_WIDTH * channels);
-    std::cout << "Done! Saved to cornell_box_smoke.png" << std::endl;
+    stbi_write_png("photon_mapping.png", IMAGE_WIDTH, height, channels, image.data(), IMAGE_WIDTH * channels);
+    std::cout << "Done! Saved to photon_mapping.png" << std::endl;
 
     return 0;
 }
