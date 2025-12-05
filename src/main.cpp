@@ -23,15 +23,15 @@
 
 // --- Configuration ---
 const int MAX_DEPTH = 10;
-const int SAMPLES_PER_PIXEL = 100; // Increase for high quality
+const int SAMPLES_PER_PIXEL = 250; // Increase for high quality
 const int IMAGE_WIDTH = 800;
 const float ASPECT_RATIO = 16.0f / 9.0f;
 
 // Photon Mapping Settings (Only used for Scene 2 usually)
-const int NUM_PHOTON = 100000; 
-const float CAUSTIC_RADIUS = 3.0f;
-const float GLOBAL_RADIUS = 9.0f;
-const int FINAL_GATHER_BOUND = 5;
+const int NUM_PHOTON = 5000000; 
+const float CAUSTIC_RADIUS = 1.0f;
+const float GLOBAL_RADIUS = 3.0f;
+const int FINAL_GATHER_BOUND = 3;
 
 // ==========================
 // SCENE SELECTION
@@ -67,7 +67,7 @@ int main() {
     // Integrator Selection
     std::unique_ptr<Integrator> integrator;
 
-    if (SCENE_ID == 2) {
+    if (SCENE_ID == 0) {
         std::cout << "Using Photon Integrator..." << std::endl;
         integrator = std::make_unique<PhotonIntegrator>(
             MAX_DEPTH, NUM_PHOTON, CAUSTIC_RADIUS, GLOBAL_RADIUS, FINAL_GATHER_BOUND, world

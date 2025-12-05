@@ -64,7 +64,7 @@ public:
                 light->emit(pos, dir, power, static_cast<float>(photons_per_light)); 
 
                 if (glm::length(power) > 0.0f) {
-                    Ray photon_ray(pos + dir * 1e-4f, dir); 
+                    Ray photon_ray(pos + dir * SHADOW_EPSILON, dir); 
                     trace_photon(scene, photon_ray, power);
                 }
             }
