@@ -98,9 +98,21 @@ void scene_cornell_smoke_caustics(Scene& world, Camera& cam, float aspect) {
     world.add(std::make_shared<Sphere>(glm::vec3(190.0f, 90.0f, 190.0f), 90.0f, glass));
 
     // Fog / Smoke Block
-    auto boundary = std::make_shared<Sphere>(glm::vec3(360.0f, 150.0f, 360.0f), 80.0f, white); // Using Sphere as boundary for simplicity
+    auto boundary_fog = std::make_shared<Sphere>(glm::vec3(360.0f, 150.0f, 360.0f), 80.0f, white); // Using Sphere as boundary for simplicity
+    // auto boundary_fireball = std::make_shared<Sphere>(glm::vec3(410.0f, 200.0f, 250.0f), 80.0f, white); // Using Sphere as boundary for simplicity
+    
+    // Mesh (Bunny)
+    auto boundary_bunny = std::make_shared<Mesh>(
+        "assets/model/bunny_200_subdivided_1.obj", // Ensure file exists
+        white,
+        glm::vec3(350.0f, 130.0f, 200.0f), // Pos
+        800.0f,                       // Scale
+        glm::vec3(0.0f, 1.0f, 0.0f),          // Rot Axis
+        170.0f                       // Rot Angle
+    );
     // Density 0.01, White color
-    world.add(std::make_shared<ConstantMedium>(boundary, 0.01f, glm::vec3(1.0f)));
+    world.add(std::make_shared<ConstantMedium>(boundary_bunny, 0.01f, glm::vec3(1.0f)));
+    world.add(std::make_shared<ConstantMedium>(boundary_fog, 0.001f, glm::vec3(1.0f), glm::vec3(2.0f, 0.75f, 0.25f)));
 
     // Camera
     glm::vec3 lookfrom(278.0f, 278.0f, -800.0f);
