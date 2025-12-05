@@ -14,8 +14,14 @@ class Scene : public Object {
 public:
     Scene() {}
     Scene(std::shared_ptr<Object> object) { add(object); }
+    /**
+     * @brief Set the background texture and register it as an Environment Light.
+     * This enables Next Event Estimation (NEE) for the background.
+     */
     void set_background(std::shared_ptr<Texture> bg) {
         background_texture = bg;
+        // Register as a light source for NEE
+        lights.push_back(std::make_shared<EnvironmentLight>(bg));
     }
     /**
      * @brief Clear all objects and lights from the scene.

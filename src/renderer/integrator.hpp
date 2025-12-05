@@ -51,10 +51,27 @@ public:
             
             // 1. Intersection
             if (!scene.intersect(current_ray, SHADOW_EPSILON, Infinity, rec)) {
-                // Background usually treated as pure BSDF sample (or implement MIS for EnvMap later)
-                glm::vec3 nee_contribution = throughput * scene.sample_background(current_ray);
-                clamp_radiance(nee_contribution);
-                L += nee_contribution;
+                glm::vec3 env_color = scene.sample_background(current_ray);
+                
+                // If this is the first bounce or previous bounce was specular, we take full contribution.
+                // Otherwise, we apply MIS weight because we perform NEE for environment light too.
+                if (bounce == 0 || last_bounce_specular || scene.lights.empty()) {
+                    L += throughput * env_color;
+                } else {
+                    // Calculate MIS weight for the implicit path (BSDF sampling)
+                    // We need the probability of sampling this specific direction via the EnvironmentLight.
+                    
+                    // 1. Probability of selecting the Environment Light among all lights
+                    float pdf_light_selection = 1.0f / static_cast<float>(scene.lights.size());
+                    
+                    // 2. Probability of sampling this direction on the Environment Light (Uniform Spherical)
+                    float pdf_light_dir = 1.0f / (4.0f * PI);
+                    
+                    float pdf_light_total = pdf_light_selection * pdf_light_dir;
+                    
+                    float weight = power_heuristic(last_bsdf_pdf, pdf_light_total);
+                    L += throughput * env_color * weight;
+                }
                 break;
             }
 
@@ -178,6 +195,9 @@ protected:
                     float cos_theta = glm::dot(srec.shading_normal, glm::normalize(to_light));
                     if (cos_theta > 0.0f) {
                         // if (glm::dot(rec.normal, glm::normalize(to_light)) > 0.0f) 
+                        // printf("returned: %f %f %f %f %f\n", L_emitted, f_r, cos_theta, weight, 1.0 / total_light_pdf);
+                        // glm::vec3 ret = L_emitted * f_r * cos_theta * weight / total_light_pdf;
+                        // printf("%f %f %f\n", ret.x, ret.y, ret.z);
                         return L_emitted * f_r * cos_theta * weight / total_light_pdf;
                     }
                 }
