@@ -18,13 +18,13 @@ FetchContent_Declare(
 )
 FetchContent_MakeAvailable(glm)
 
-# TinyObjLoader (用于加载 OBJ 模型)
-FetchContent_Declare(
-    tinyobjloader
-    GIT_REPOSITORY https://github.com/tinyobjloader/tinyobjloader.git
-    GIT_TAG        release
-)
-FetchContent_MakeAvailable(tinyobjloader)
+# # TinyObjLoader (用于加载 OBJ 模型)
+# FetchContent_Declare(
+#     tinyobjloader
+#     GIT_REPOSITORY https://github.com/tinyobjloader/tinyobjloader.git
+#     GIT_TAG        release
+# )
+# FetchContent_MakeAvailable(tinyobjloader)
 
 # --- 3. 配置包含目录 ---
 include_directories(${CMAKE_SOURCE_DIR}/src)
@@ -41,8 +41,7 @@ set(CMAKE_RUNTIME_OUTPUT_DIRECTORY_RELEASE ${OUTPUT_DIR})
 # --- 5. 添加源文件 ---
 set(SOURCES
     src/main.cpp
-    src/core/stb_impl.cpp
-    src/core/loader_impl.cpp  # 新增：用于实现 tinyobjloader
+    src/core/loader_impl.cpp
 )
 
 # --- 6. 生成可执行文件 ---

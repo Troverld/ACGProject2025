@@ -146,11 +146,11 @@ public:
                 }
             }
             // Russian Roulette
-            // if (bounce > 3) {
-            //     float p = std::max(throughput.x, std::max(throughput.y, throughput.z));
-            //     if (random_float() > p) break;
-            //     throughput /= p;
-            // }
+            if (bounce > 3) {
+                float p = std::max(throughput.x, std::max(throughput.y, throughput.z));
+                if (random_float() > p) break;
+                throughput /= p;
+            }
         }
         return L;
     }
