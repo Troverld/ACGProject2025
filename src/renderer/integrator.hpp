@@ -52,7 +52,9 @@ public:
             // 1. Intersection
             if (!scene.intersect(current_ray, SHADOW_EPSILON, Infinity, rec)) {
                 // Background usually treated as pure BSDF sample (or implement MIS for EnvMap later)
-                L += throughput * scene.sample_background(current_ray);
+                glm::vec3 nee_contribution = throughput * scene.sample_background(current_ray);
+                clamp_radiance(nee_contribution);
+                L += nee_contribution;
                 break;
             }
 
@@ -183,7 +185,7 @@ protected:
         }
         return glm::vec3(0.0f);
     }
-    void clamp_radiance(glm::vec3 &L, float limit = 10.0f) const {
+    void clamp_radiance(glm::vec3 &L, float limit = 5.0f) const {
         float lum = glm::length(L);
         if (lum > limit) {
             L = L * (limit / lum);

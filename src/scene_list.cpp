@@ -34,12 +34,12 @@ void scene_materials_textures(Scene& world, Camera& cam, float aspect) {
     auto mat_noise  = std::make_shared<Lambertian>(perlin);
     
     // Ground
-    world.add(std::make_shared<Sphere>(glm::vec3(0, -1000, 0), 1000, mat_ground));
+    world.add(std::make_shared<Sphere>(glm::vec3(0.0f, -1000.0f, 0.0f), 1000.0f, mat_ground));
 
     // Objects
-    world.add(std::make_shared<Sphere>(glm::vec3(0, 1, 0), 1.0f, mat_glass));      // Center: Glass
-    world.add(std::make_shared<Sphere>(glm::vec3(-4, 1, 0), 1.0f, mat_noise));     // Left: Perlin Noise
-    world.add(std::make_shared<Sphere>(glm::vec3(4, 1, 0), 1.0f, mat_metal));      // Right: Metal
+    world.add(std::make_shared<Sphere>(glm::vec3(0.0f, 1.0f, 0.0f), 1.0f, mat_glass));      // Center: Glass
+    world.add(std::make_shared<Sphere>(glm::vec3(-4.0f, 1.0f, 0.0f), 1.0f, mat_noise));     // Left: Perlin Noise
+    world.add(std::make_shared<Sphere>(glm::vec3(4.0f, 1.0f, 0.0f), 1.0f, mat_metal));      // Right: Metal
 
     // Normal Map Test (Front)
     // 需要确保 assets/texture/red_brick/ 路径下有纹理，否则用纯色替代
@@ -79,35 +79,35 @@ void scene_cornell_smoke_caustics(Scene& world, Camera& cam, float aspect) {
     auto glass = std::make_shared<Dielectric>(glm::vec3(1.0f), 1.5f);
 
     // Cornell Box Walls
-    world.add(std::make_shared<Triangle>(glm::vec3(555,0,0), glm::vec3(0,0,0), glm::vec3(0,0,555), white)); // Floor 1
-    world.add(std::make_shared<Triangle>(glm::vec3(555,0,555), glm::vec3(555,0,0), glm::vec3(0,0,555), white)); // Floor 2
-    world.add(std::make_shared<Triangle>(glm::vec3(555,555,555), glm::vec3(0,555,555), glm::vec3(0,555,0), white)); // Ceiling
-    world.add(std::make_shared<Triangle>(glm::vec3(0,555,0), glm::vec3(555,555,0), glm::vec3(555,555,555), white)); // Ceiling
-    world.add(std::make_shared<Triangle>(glm::vec3(555,0,555), glm::vec3(0,0,555), glm::vec3(0,555,555), white)); // Back
-    world.add(std::make_shared<Triangle>(glm::vec3(0,555,555), glm::vec3(555,555,555), glm::vec3(555,0,555), white)); // Back
-    world.add(std::make_shared<Triangle>(glm::vec3(555,0,555), glm::vec3(555,555,555), glm::vec3(555,555,0), green)); // Left
-    world.add(std::make_shared<Triangle>(glm::vec3(555,555,0), glm::vec3(555,0,0), glm::vec3(555,0,555), green)); // Left
-    world.add(std::make_shared<Triangle>(glm::vec3(0,0,555), glm::vec3(0,555,0), glm::vec3(0,555,555), red)); // Right
-    world.add(std::make_shared<Triangle>(glm::vec3(0,555,0), glm::vec3(0,0,555), glm::vec3(0,0,0), red)); // Right
+    world.add(std::make_shared<Triangle>(glm::vec3(555.0f,0.0f,0.0f), glm::vec3(0.0f,0.0f,0.0f), glm::vec3(0.0f,0.0f,555.0f), white)); // Floor 1
+    world.add(std::make_shared<Triangle>(glm::vec3(555.0f,0.0f,555.0f), glm::vec3(555.0f,0.0f,0.0f), glm::vec3(0.0f,0.0f,555.0f), white)); // Floor 2
+    world.add(std::make_shared<Triangle>(glm::vec3(555.0f,555.0f,555.0f), glm::vec3(0.0f,555.0f,555.0f), glm::vec3(0.0f,555.0f,0.0f), white)); // Ceiling
+    world.add(std::make_shared<Triangle>(glm::vec3(0.0f,555.0f,0.0f), glm::vec3(555.0f,555.0f,0.0f), glm::vec3(555.0f,555.0f,555.0f), white)); // Ceiling
+    world.add(std::make_shared<Triangle>(glm::vec3(555.0f,0.0f,555.0f), glm::vec3(0.0f,0.0f,555.0f), glm::vec3(0.0f,555.0f,555.0f), white)); // Back
+    world.add(std::make_shared<Triangle>(glm::vec3(0.0f,555.0f,555.0f), glm::vec3(555.0f,555.0f,555.0f), glm::vec3(555.0f,0.0f,555.0f), white)); // Back
+    world.add(std::make_shared<Triangle>(glm::vec3(555.0f,0.0f,555.0f), glm::vec3(555.0f,555.0f,555.0f), glm::vec3(555.0f,555.0f,0.0f), green)); // Left
+    world.add(std::make_shared<Triangle>(glm::vec3(555.0f,555.0f,0.0f), glm::vec3(555.0f,0.0f,0.0f), glm::vec3(555.0f,0.0f,555.0f), green)); // Left
+    world.add(std::make_shared<Triangle>(glm::vec3(0.0f,0.0f,555.0f), glm::vec3(0.0f,555.0f,0.0f), glm::vec3(0.0f,555.0f,555.0f), red)); // Right
+    world.add(std::make_shared<Triangle>(glm::vec3(0.0f,555.0f,0.0f), glm::vec3(0.0f,0.0f,555.0f), glm::vec3(0.0f,0.0f,0.0f), red)); // Right
 
     // Light (Small area light on ceiling)
-    world.add(std::make_shared<Triangle>(glm::vec3(213,554,227), glm::vec3(343,554,227), glm::vec3(343,554,332), light));
-    world.add(std::make_shared<Triangle>(glm::vec3(213,554,227), glm::vec3(343,554,332), glm::vec3(213,554,332), light));
+    world.add(std::make_shared<Triangle>(glm::vec3(213.0f,554.0f,227.0f), glm::vec3(343.0f,554.0f,227.0f), glm::vec3(343.0f,554.0f,332.0f), light));
+    world.add(std::make_shared<Triangle>(glm::vec3(213.0f,554.0f,227.0f), glm::vec3(343.0f,554.0f,332.0f), glm::vec3(213.0f,554.0f,332.0f), light));
 
     // Glass Sphere for Caustics
-    world.add(std::make_shared<Sphere>(glm::vec3(190, 90, 190), 90.0f, glass));
+    world.add(std::make_shared<Sphere>(glm::vec3(190.0f, 90.0f, 190.0f), 90.0f, glass));
 
     // Fog / Smoke Block
-    auto boundary = std::make_shared<Sphere>(glm::vec3(360, 150, 360), 80.0f, white); // Using Sphere as boundary for simplicity
+    auto boundary = std::make_shared<Sphere>(glm::vec3(360.0f, 150.0f, 360.0f), 80.0f, white); // Using Sphere as boundary for simplicity
     // Density 0.01, White color
     world.add(std::make_shared<ConstantMedium>(boundary, 0.01f, glm::vec3(1.0f)));
 
     // Camera
-    glm::vec3 lookfrom(278, 278, -800);
-    glm::vec3 lookat(278, 278, 0);
+    glm::vec3 lookfrom(278.0f, 278.0f, -800.0f);
+    glm::vec3 lookat(278.0f, 278.0f, 0);
     float dist_to_focus = 10.0f;
     float aperture = 0.0f;
-    cam = Camera(lookfrom, lookat, glm::vec3(0,1,0), 40.0f, aspect, aperture, dist_to_focus);
+    cam = Camera(lookfrom, lookat, glm::vec3(0.0f,1.0f,0.0f), 40.0f, aspect, aperture, dist_to_focus);
     
     world.set_background(std::make_shared<SolidColor>(0.0f, 0.0f, 0.0f));
 }
@@ -122,7 +122,7 @@ void scene_motion_blur(Scene& world, Camera& cam, float aspect) {
     world.clear();
 
     auto ground = std::make_shared<Lambertian>(glm::vec3(0.5f, 0.5f, 0.5f));
-    world.add(std::make_shared<Sphere>(glm::vec3(0,-1000,0), 1000, ground));
+    world.add(std::make_shared<Sphere>(glm::vec3(0.0f,-1000.0f,0.0f), 1000.0f, ground));
 
     // Add many small moving spheres
     for (int a = -11; a < 11; a++) {
@@ -130,14 +130,14 @@ void scene_motion_blur(Scene& world, Camera& cam, float aspect) {
             float choose_mat = random_float();
             glm::vec3 center(a + 0.9f*random_float(), 0.2f, b + 0.9f*random_float());
 
-            if (glm::length(center - glm::vec3(4, 0.2, 0)) > 0.9f) {
+            if (glm::length(center - glm::vec3(4.0f, 0.2f, 0.0f)) > 0.9f) {
                 std::shared_ptr<Material> sphere_material;
 
                 if (choose_mat < 0.8f) {
                     // Diffuse moving sphere
-                    glm::vec3 albedo = random_vec3(0,1) * random_vec3(0,1);
+                    glm::vec3 albedo = random_vec3(0.0f,1.0f) * random_vec3(0.0f,1.0f);
                     sphere_material = std::make_shared<Lambertian>(albedo);
-                    glm::vec3 center2 = center + glm::vec3(0, random_float(0, 0.5f), 0); // Move Up
+                    glm::vec3 center2 = center + glm::vec3(0.0f, random_float(0.0f, 0.5f), 0.0f); // Move Up
                     world.add(std::make_shared<MovingSphere>(center, center2, 0.0f, 1.0f, 0.2f, sphere_material));
                 } else {
                     // Glass/Metal static
@@ -149,15 +149,15 @@ void scene_motion_blur(Scene& world, Camera& cam, float aspect) {
     }
 
     auto material1 = std::make_shared<Dielectric>(glm::vec3(1.0f), 1.5f);
-    world.add(std::make_shared<Sphere>(glm::vec3(0, 1, 0), 1.0f, material1));
+    world.add(std::make_shared<Sphere>(glm::vec3(0.0f, 1.0f, 0.0f), 1.0f, material1));
 
     // Camera with shutter open/close times [0, 1]
-    glm::vec3 lookfrom(13, 2, 3);
-    glm::vec3 lookat(0, 0, 0);
+    glm::vec3 lookfrom(13.0f, 2.0f, 3.0f);
+    glm::vec3 lookat(0.0f, 0.0f, 0.0f);
     float dist_to_focus = 10.0f;
     float aperture = 0.1f;
 
-    cam = Camera(lookfrom, lookat, glm::vec3(0,1,0), 20.0f, aspect, aperture, dist_to_focus, 0.0f, 1.0f);
+    cam = Camera(lookfrom, lookat, glm::vec3(0.0f,1.0f,0.0f), 20.0f, aspect, aperture, dist_to_focus, 0.0f, 1.0f);
     
     world.set_background(std::make_shared<SolidColor>(0.7f, 0.8f, 1.0f));
 }
@@ -181,7 +181,7 @@ void scene_mesh_env(Scene& world, Camera& cam, float aspect) {
     auto mat_floor = std::make_shared<Lambertian>(glm::vec3(0.5f));
 
     // Floor
-    world.add(std::make_shared<Sphere>(glm::vec3(0,-1000,0), 1000, mat_floor));
+    world.add(std::make_shared<Sphere>(glm::vec3(0.0f,-1000.0f,0.0f), 1000.0f, mat_floor));
 
     // Mesh (Bunny)
     auto bunny = std::make_shared<Mesh>(
@@ -189,16 +189,16 @@ void scene_mesh_env(Scene& world, Camera& cam, float aspect) {
         mat_gold,
         glm::vec3(0.0f, 0.0f, 0.0f), // Pos
         50.0f,                       // Scale
-        glm::vec3(0, 1, 0),          // Rot Axis
+        glm::vec3(0.0f, 1.0f, 0.0f),          // Rot Axis
         180.0f                       // Rot Angle
     );
     world.add(bunny);
 
     // Light
-    world.add(std::make_shared<Sphere>(glm::vec3(0, 50, 0), 10.0f, std::make_shared<DiffuseLight>(glm::vec3(5.0f))));
+    world.add(std::make_shared<Sphere>(glm::vec3(0.0f, 50.0f, 0.0f), 10.0f, std::make_shared<DiffuseLight>(glm::vec3(5.0f))));
 
     // Camera
-    glm::vec3 lookfrom(0, 30, 60);
-    glm::vec3 lookat(0, 10, 0);
-    cam = Camera(lookfrom, lookat, glm::vec3(0,1,0), 40.0f, aspect, 0.0f, 10.0f);
+    glm::vec3 lookfrom(0.0f, 30.0f, 60.0f);
+    glm::vec3 lookat(0.0f, 10.0f, 0.0f);
+    cam = Camera(lookfrom, lookat, glm::vec3(0.0f,1.0f,0.0f), 40.0f, aspect, 0.0f, 10.0f);
 }

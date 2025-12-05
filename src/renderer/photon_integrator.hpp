@@ -88,7 +88,9 @@ public:
         for (int bounce = 0; bounce < max_depth; ++bounce) {
             HitRecord rec;
             if (!scene.intersect(current_ray, SHADOW_EPSILON, Infinity, rec)) {
-                L += throughput * scene.sample_background(current_ray);
+                glm::vec3 nee_contribution = throughput * scene.sample_background(current_ray);
+                clamp_radiance(nee_contribution);
+                L += nee_contribution;
                 break;
             }
 
