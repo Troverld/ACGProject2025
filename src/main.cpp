@@ -40,7 +40,7 @@ const int FINAL_GATHER_BOUND = 3;
 // 3: Motion Blur (BVH stress test)
 // 4: Mesh & Env Map
 // ==========================
-const int SCENE_ID = 4; 
+const int SCENE_ID = 3; 
 
 int main() {
     const int height = static_cast<int>(IMAGE_WIDTH / ASPECT_RATIO); 

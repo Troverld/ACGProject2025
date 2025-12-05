@@ -11,29 +11,43 @@ class BVHNode : public Object {
 public:
     BVHNode() {}
 
+    /**
+     * @brief Public constructor that takes a list of objects.
+     * It creates a copy of the vector once, then passes it by reference to the recursive constructor.
+     */
     BVHNode(const std::vector<std::shared_ptr<Object>>& src_objects, float time0, float time1)
         : BVHNode(src_objects, 0, src_objects.size(), time0, time1)
     {}
 
-    BVHNode(const std::vector<std::shared_ptr<Object>>& src_objects, 
+    /**
+     * @brief Recursive constructor.
+     * NOTE: We pass 'objects' by reference (non-const) to allow sorting in place without copying.
+     */
+    BVHNode(std::vector<std::shared_ptr<Object>>& objects, 
             size_t start, size_t end, float time0, float time1) 
     {
-        auto objects = src_objects; 
-
-        // 1. 随机选择一个轴进行划分 (更高级的SAH会在这里计算最优轴)
-        // 注意：这里我们将轴记录下来，供 intersect 使用
+        // 1. Choose a random axis (0=x, 1=y, 2=z) to split the objects
+        // (Advanced BVH uses SAH, but random axis is acceptable for simple implementations)
         int axis = random_int(0, 2);
-        
-        // 比较函数
-        auto comparator = (axis == 0) ? box_x_compare
-                        : (axis == 1) ? box_y_compare
-                        :               box_z_compare;
+        this->split_axis = axis; // Store axis for optimized intersection
+
+        // 2. Define the comparator lambda function
+        // We must use the time interval (time0, time1) to get the correct bounding box for moving objects.
+        auto comparator = [=](const std::shared_ptr<Object>& a, const std::shared_ptr<Object>& b) {
+            AABB box_a, box_b;
+            if (!a->bounding_box(time0, time1, box_a) || !b->bounding_box(time0, time1, box_b))
+                std::cerr << "No bounding box in BVHNode constructor.\n";
+
+            return box_a.min_point()[axis] < box_b.min_point()[axis];
+        };
 
         size_t object_span = end - start;
 
         if (object_span == 1) {
+            // Leaf node with 1 object: duplicate the pointer to avoid null checks later
             left = right = objects[start];
         } else if (object_span == 2) {
+            // Leaf node with 2 objects: just sort them directly
             if (comparator(objects[start], objects[start+1])) {
                 left = objects[start];
                 right = objects[start+1];
@@ -42,18 +56,18 @@ public:
                 right = objects[start];
             }
         } else {
+            // Internal node: Sort the range and split in half
             std::sort(objects.begin() + start, objects.begin() + end, comparator);
 
             size_t mid = start + object_span / 2;
             
-            // 递归构建
+            // Recursively build children
+            // Note: We pass the SAME 'objects' vector reference
             left = std::make_shared<BVHNode>(objects, start, mid, time0, time1);
             right = std::make_shared<BVHNode>(objects, mid, end, time0, time1);
         }
 
-        // 保存本次划分使用的轴
-        this->split_axis = axis; 
-
+        // 3. Compute the bounding box for this node
         AABB box_left, box_right;
         bool has_box_l = left->bounding_box(time0, time1, box_left);
         bool has_box_r = right->bounding_box(time0, time1, box_right);
@@ -65,26 +79,27 @@ public:
     }
 
     /**
-     * @brief 优化后的遍历：考虑光线方向
+     * @brief Optimized intersection test using Front-to-Back Traversal.
      */
     virtual bool intersect(const Ray& r, float t_min, float t_max, HitRecord& rec) const override {
+        // 1. Check if the ray hits the bounding box of this node
         if (!box.hit(r, t_min, t_max))
             return false;
 
-        // 优化的核心：Front-to-Back Traversal
-        // 如果光线在划分轴上的分量为正，则 Left 节点通常在“前面”（坐标较小），Right 在“后面”（坐标较大）。
-        // 如果为负，则反之。
+        // 2. Determine traversal order based on ray direction.
+        // If the ray direction is positive along the split axis, the 'left' child (smaller coordinates)
+        // is likely closer. If negative, the 'right' child is likely closer.
         bool visit_left_first = r.direction()[split_axis] >= 0;
 
         const auto& first = visit_left_first ? left : right;
         const auto& second = visit_left_first ? right : left;
 
-        // 1. 查最近的子节点
+        // 3. Check the closer child (first)
         bool hit_first = first->intersect(r, t_min, t_max, rec);
         
-        // 2. 查较远的子节点
-        // 关键点：如果 first 命中了，我们将 t_max 缩小为 rec.t
-        // 这样如果 second 的包围盒比 rec.t 还远，box.hit 就会直接返回 false，从而剪枝。
+        // 4. Check the farther child (second)
+        // Optimization: If 'first' hit something, we shorten t_max to 'rec.t'.
+        // This allows the bounding box check of 'second' to fail early if it is farther away than the hit in 'first'.
         bool hit_second = second->intersect(r, t_min, hit_first ? rec.t : t_max, rec);
 
         return hit_first || hit_second;
@@ -95,28 +110,22 @@ public:
         return true;
     }
     
+    // BVH nodes themselves do not have materials; only the leaf primitives do.
     virtual Material* get_material() const override { return nullptr; }
 
 public:
     std::shared_ptr<Object> left;
     std::shared_ptr<Object> right;
     AABB box;
-    int split_axis = 0; // 新增：记录该节点是按哪个轴划分的
-
+    int split_axis = 0; // The axis (0, 1, or 2) used to split this node
+    
 private:
-    static bool box_compare(const std::shared_ptr<Object> a, const std::shared_ptr<Object> b, int axis) {
-        AABB box_a, box_b;
-        if (!a->bounding_box(0, 0, box_a) || !b->bounding_box(0, 0, box_b))
-            std::cerr << "No bounding box in BVH constructor.\n";
-        return box_a.min_point()[axis] < box_b.min_point()[axis];
-    }
-    static bool box_x_compare(const std::shared_ptr<Object> a, const std::shared_ptr<Object> b) {
-        return box_compare(a, b, 0);
-    }
-    static bool box_y_compare(const std::shared_ptr<Object> a, const std::shared_ptr<Object> b) {
-        return box_compare(a, b, 1);
-    }
-    static bool box_z_compare(const std::shared_ptr<Object> a, const std::shared_ptr<Object> b) {
-        return box_compare(a, b, 2);
+    // Helper constructor to allow the public one to copy the vector once
+    BVHNode(const std::vector<std::shared_ptr<Object>>& src_objects, 
+            size_t start, size_t end, float time0, float time1)
+    {
+        // This constructor delegates to the reference-based constructor
+        auto objects = src_objects; // Copy happens HERE only once for the root
+        *this = BVHNode(objects, start, end, time0, time1);
     }
 };
