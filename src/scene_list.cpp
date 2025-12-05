@@ -214,3 +214,57 @@ void scene_mesh_env(Scene& world, Camera& cam, float aspect) {
     glm::vec3 lookat(0.0f, 10.0f, 0.0f);
     cam = Camera(lookfrom, lookat, glm::vec3(0.0f,1.0f,0.0f), 40.0f, aspect, 0.0f, 10.0f);
 }
+
+
+
+// =======================================================================
+// Scene 1: Advanced Materials & Textures
+// 验证功能: 
+// 1. Texture Mapping (Checker, Image, Perlin)
+// 2. Normal Mapping (Bump map)
+// 3. Material (Glass, Metal, Matte)
+// 4. Depth of Field (Aperture > 0)
+// =======================================================================
+void scene_5(Scene& world, Camera& cam, float aspect) {
+    world.clear();
+
+    // Textures
+    auto checker = std::make_shared<CheckerTexture>(glm::vec3(0.2f, 0.3f, 0.1f), glm::vec3(0.9f), 10.0f);
+    auto perlin  = std::make_shared<Perlin>(4.0f);
+    
+    // Materials
+    auto mat_ground = std::make_shared<Lambertian>(checker);
+    auto mat_glass  = std::make_shared<Dielectric>(glm::vec3(1.0f), 1.5f);
+    auto mat_metal  = std::make_shared<Metal>(glm::vec3(0.7f, 0.6f, 0.5f), 0.05f);
+    auto mat_noise  = std::make_shared<Lambertian>(perlin);
+    
+    // Ground
+    world.add(std::make_shared<Sphere>(glm::vec3(0, -1000, 0), 1000, mat_ground));
+
+    // Objects
+    // world.add(std::make_shared<Sphere>(glm::vec3(0, 1, 0), 1.0f, mat_glass));      // Center: Glass
+    // world.add(std::make_shared<Sphere>(glm::vec3(-4, 1, 0), 1.0f, mat_noise));     // Left: Perlin Noise
+    // world.add(std::make_shared<Sphere>(glm::vec3(4, 1, 0), 1.0f, mat_metal));      // Right: Metal
+
+    // Normal Map Test (Front)
+    // 需要确保 assets/texture/red_brick/ 路径下有纹理，否则用纯色替代
+    // 这里假设你有图片，如果没有，会自动回退或报错，可根据实际情况注释掉
+    auto diff_tex = std::make_shared<ImageTexture>("assets/texture/broken_brick_wall/broken_brick_wall_diff_1k.png");
+    auto norm_tex = std::make_shared<ImageTexture>("assets/texture/broken_brick_wall/broken_brick_wall_nor_gl_1k.png");
+    auto mat_brick = std::make_shared<Lambertian>(diff_tex);
+    mat_brick->set_normal_map(norm_tex);
+    world.add(std::make_shared<Sphere>(glm::vec3(4.0, 1.0, 0.0), 1.0, mat_brick)); 
+    auto light_mat = std::make_shared<DiffuseLight>(glm::vec3(15.0f, 15.0f, 15.0f));
+    world.add(std::make_shared<Sphere>(glm::vec3(4.0, 0.0, 1.3), 0.5, light_mat));
+
+    // Camera
+    glm::vec3 lookfrom(13, 2, 3);
+    glm::vec3 lookat(0, 0, 0);
+    float dist_to_focus = 10.0f;
+    float aperture = 0.1f; // Enable Depth of Field
+
+    cam = Camera(lookfrom, lookat, glm::vec3(0,1,0), 20.0f, aspect, aperture, dist_to_focus);
+    
+    // Environment Lighting (Background)
+    world.set_background(std::make_shared<SolidColor>(0.7f, 0.8f, 1.0f));
+}
