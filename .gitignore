@@ -48,7 +48,7 @@ __pycache__/
 !assets/**/*.ppm
 !assets/**/*.bmp
 !assets/**/*.tga
-!assets/
+!assets/**/*.obj
 
 # --- AI Context ---
 # 忽略脚本生成的代码汇总文件
