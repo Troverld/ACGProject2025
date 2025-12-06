@@ -8,20 +8,18 @@
 #include "../texture/texture.hpp"
 /**
  * @brief A container for all objects in the scene.
- * Also implements the Object interface, so a Scene can be treated as a single Hittable.
+ * ~~Also implements the Object interface, so a Scene can be treated as a single Hittable.~~
  */
-class Scene : public Object {
+class Scene{
 public:
     Scene() {}
-    Scene(std::shared_ptr<Object> object) { add(object); }
+    // Scene(std::shared_ptr<Object> object) { add(object); }
     /**
      * @brief Set the background texture and register it as an Environment Light.
      * This enables Next Event Estimation (NEE) for the background.
      */
     void set_background(std::shared_ptr<Texture> bg) {
-        background_texture = bg;
-        // Register as a light source for NEE
-        lights.push_back(std::make_shared<EnvironmentLight>(bg));
+        env_light = std::make_shared<EnvironmentLight>(bg);
     }
     /**
      * @brief Clear all objects and lights from the scene.
@@ -48,6 +46,14 @@ public:
     }
 
     /**
+     * @brief Manually register a light source.
+     * Use this for non-geometric lights like PointLight or DirectionalLight.
+     */
+    void add_light(std::shared_ptr<Light> light) {
+        lights.push_back(light);
+    }
+
+    /**
      * @brief Construct the BVH structure.
      * MUST be called before rendering starts for acceleration to take effect.
      * 
@@ -65,7 +71,7 @@ public:
      * @brief Intersects a ray with all objects in the scene.
      * Finds the closest intersection.
      */
-    virtual bool intersect(const Ray& r, float t_min, float t_max, HitRecord& rec) const override {
+    bool intersect(const Ray& r, float t_min, float t_max, HitRecord& rec) const {
         // Use BVH if available
         if (bvh_root) {
             return bvh_root->intersect(r, t_min, t_max, rec);
@@ -86,24 +92,24 @@ public:
         return hit_anything;
     }
 
-    /**
-     * @brief Find the bounding box of the scene
-     */
-    virtual bool bounding_box(float time0, float time1, AABB& output_box) const override {
-        if (bvh_root) return bvh_root->bounding_box(time0, time1, output_box);
-        if (objects.empty()) return false;
+    // /**
+    //  * @brief Find the bounding box of the scene
+    //  */
+    // virtual bool bounding_box(float time0, float time1, AABB& output_box) const override {
+    //     if (bvh_root) return bvh_root->bounding_box(time0, time1, output_box);
+    //     if (objects.empty()) return false;
 
-        AABB temp_box;
-        bool first_box = true;
+    //     AABB temp_box;
+    //     bool first_box = true;
 
-        for (const auto& object : objects) {
-            if (!object->bounding_box(time0, time1, temp_box)) return false;
-            output_box = first_box ? temp_box : surrounding_box(output_box, temp_box);
-            first_box = false;
-        }
+    //     for (const auto& object : objects) {
+    //         if (!object->bounding_box(time0, time1, temp_box)) return false;
+    //         output_box = first_box ? temp_box : surrounding_box(output_box, temp_box);
+    //         first_box = false;
+    //     }
 
-        return true;
-    }
+    //     return true;
+    // }
 
     /**
      * @brief Samples the background color for a ray that missed all geometry.
@@ -114,13 +120,7 @@ public:
      */
     glm::vec3 sample_background(const Ray& r) const {
         // --- ADDED: Texture Sampling ---
-        if (background_texture) {
-            glm::vec3 unit_direction = glm::normalize(r.direction());
-            float u, v;
-            // Map the direction vector to UV coordinates using spherical mapping
-            get_sphere_uv(unit_direction, u, v);
-            return background_texture->value(u, v, unit_direction);
-        }
+        if (env_light) return env_light->eval(r.direction());
 
         // Default Gradient Fallback
         glm::vec3 unit_direction = glm::normalize(r.direction());
@@ -130,11 +130,11 @@ public:
         return (1.0f - t) * glm::vec3(1.0f, 1.0f, 1.0f) + t * glm::vec3(0.5f, 0.7f, 1.0f);
     }
     // Stub implementation for Scene itself acting as an object
-    virtual Material* get_material() const override { return nullptr; }
+    // virtual Material* get_material() const override { return nullptr; }
 
 public:
     std::vector<std::shared_ptr<Object>> objects;
-    std::vector<std::shared_ptr<Light>> lights;
-    std::shared_ptr<Texture> background_texture; // Added member
+    std::vector<std::shared_ptr<Light>> lights;  // Area lights only
+    std::shared_ptr<EnvironmentLight> env_light;           // Dedicated Environment Light (can be nullptr)
     std::shared_ptr<Object> bvh_root; 
 };

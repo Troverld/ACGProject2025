@@ -15,7 +15,7 @@
 #include "core/ray.hpp"
 #include "scene/scene.hpp"
 #include "scene/camera.hpp"
-#include "renderer/integrator.hpp"
+#include "renderer/path_integrator.hpp"
 #include "renderer/photon_integrator.hpp"
 
 // Scene List
@@ -40,7 +40,7 @@ const int FINAL_GATHER_BOUND = 4;
 // 3: Motion Blur (BVH stress test)
 // 4: Mesh & Env Map
 // ==========================
-const int SCENE_ID = 2; 
+const int SCENE_ID = 5; 
 
 int main() {
     const int height = static_cast<int>(IMAGE_WIDTH / ASPECT_RATIO); 
@@ -57,6 +57,7 @@ int main() {
         case 2: scene_cornell_smoke_caustics(world, cam, ASPECT_RATIO); break;
         case 3: scene_motion_blur(world, cam, ASPECT_RATIO); break;
         case 4: scene_mesh_env(world, cam, ASPECT_RATIO); break;
+        case 5: scene_5(world, cam, ASPECT_RATIO); break;
         default: scene_materials_textures(world, cam, ASPECT_RATIO); break;
     }
 

@@ -1,6 +1,6 @@
 #pragma once
 
-#include "integrator.hpp"
+#include "integrator_utils.hpp"
 #include "../accel/kdtree.hpp"
 #include "../core/photon.hpp"
 #include "../core/onb.hpp"
@@ -20,7 +20,7 @@
  *    - Direct Light: via NEE (PathIntegrator logic).
  *    - Caustics/Indirect Diffuse: via Photon Density Estimation.
  */
-class PhotonIntegrator : public PathIntegrator {
+class PhotonIntegrator : public Integrator {
 public:
     /**
      * @param max_d Maximum bounce depth for both photons and camera rays.
@@ -28,7 +28,7 @@ public:
      * @param gather_r Radius to search for photons during rendering (Density Estimation).
      */
     PhotonIntegrator(int max_d, int n_photons, float caustic_r, float global_r, int f_gather_bound, const Scene& scene) 
-        : PathIntegrator(max_d), num_photons_global(n_photons), gather_radius_caustic(caustic_r), gather_radius_global(global_r), final_gather_bound(f_gather_bound) {
+        : max_depth(max_d), num_photons_global(n_photons), gather_radius_caustic(caustic_r), gather_radius_global(global_r), final_gather_bound(f_gather_bound) {
             build_photon_map(scene);
         }
 
@@ -267,6 +267,7 @@ private:
     }
 
 private:
+    int max_depth;
     int final_gather_bound;
     int num_photons_global;
     float gather_radius_global;
