@@ -93,4 +93,45 @@ protected:
 
         return L_emitted * f_r * cos_theta * weight / total_light_pdf;
     }
+    
+    /**
+     * @brief Handle ray missing geometry (Environment lookup + MIS).
+     */
+    glm::vec3 eval_environment(const Scene& scene, const Ray& r, float bsdf_pdf, bool is_specular) const {
+        glm::vec3 env_color = scene.sample_background(r);
+        
+        // If pure specular bounce or no lights to sample, take full contribution
+        size_t n_lights = scene.lights.size() + (scene.env_light ? 1 : 0);
+        if (is_specular || n_lights == 0) {
+            return env_color;
+        }
+
+        // Apply MIS otherwise
+        float light_select_pdf = 1.0f / static_cast<float>(n_lights);
+        float light_dir_pdf = 1.0f / (4.0f * PI); // Assumption: Uniform Env Map
+        float total_light_pdf = light_select_pdf * light_dir_pdf;
+
+        float weight = power_heuristic(bsdf_pdf, total_light_pdf);
+        return env_color * weight;
+    }
+
+    /**
+     * @brief Handle ray hitting a light source directly (Emission + MIS).
+     */
+    glm::vec3 eval_emission(const Scene& scene, const HitRecord& rec, const Ray& r, float bsdf_pdf, bool is_specular) const {
+        glm::vec3 emitted = rec.mat_ptr->emitted(rec.u, rec.v, rec.p);
+        
+        size_t n_lights = scene.lights.size() + (scene.env_light ? 1 : 0);
+        if (is_specular || n_lights == 0) {
+            return emitted;
+        }
+
+        // MIS: PDF of sampling this point on the area light
+        float area_pdf = rec.object->pdf_value(r.origin(), r.direction());
+        float light_select_pdf = 1.0f / static_cast<float>(n_lights);
+        float total_light_pdf = area_pdf * light_select_pdf;
+
+        float weight = power_heuristic(bsdf_pdf, total_light_pdf);
+        return emitted * weight;
+    }
 };

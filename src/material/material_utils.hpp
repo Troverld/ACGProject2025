@@ -69,4 +69,12 @@ public:
     virtual bool is_emissive() const {
         return false;
     }
+    
+    /**
+     * @brief Check if this material causes caustics (Glass, Mirror, etc.)
+     * Used by PhotonIntegrator to find emission targets.
+     */
+    virtual bool is_specular() const {
+        return false;
+    }
 };

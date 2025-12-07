@@ -14,3 +14,16 @@ struct Photon {
     // 0: x-axis, 1: y-axis, 2: z-axis
     short plane;
 };
+
+/**
+ * @brief Used for k-Nearest Neighbor in Photon Mapping.
+ */
+struct NearPhoton {
+    const Photon* photon;
+    float dist_sq;
+
+    // We want the photon with the largest distance at the top.
+    bool operator<(const NearPhoton& other) const {
+        return dist_sq < other.dist_sq;
+    }
+};

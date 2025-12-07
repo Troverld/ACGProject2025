@@ -1,6 +1,8 @@
 #pragma once
 #include <glm/glm.hpp>
 
+#include "utils.hpp"
+
 /**
  * @brief Orthonormal Basis (ONB) helper class.
  * Used to transform vectors between World Space and Local (Tangent) Space.

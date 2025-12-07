@@ -75,6 +75,35 @@ public:
         }
     }
 
+    virtual bool emit_targeted(
+        glm::vec3& p_pos, glm::vec3& p_dir, glm::vec3& p_power, float total_photons, const Object& target
+    ) const override {
+        glm::vec3 light_normal;
+        float pdf_pos_light;
+        shape->sample_surface(p_pos, light_normal, pdf_pos_light);
+        if (pdf_pos_light <= EPSILON) return false;
+
+        glm::vec3 vec_to_target = target.random_pointing_vector(p_pos);
+        float dist = glm::length(vec_to_target);
+        
+        if (dist <= EPSILON) return false;
+        p_dir = vec_to_target / dist;
+
+        float cos_theta = glm::dot(light_normal, p_dir);
+        if (cos_theta <= 0.0f) {
+            p_power = glm::vec3(0.0f);
+            return false;
+        }
+        float pdf_dir = target.pdf_value(p_pos, p_dir);
+        
+        if (pdf_dir <= EPSILON) return false;
+        glm::vec3 Le = shape->get_material()->emitted(0.0f, 0.0f, p_pos);
+        float total_pdf = pdf_pos_light * pdf_dir;
+        p_power = (Le * cos_theta) / (total_photons * total_pdf);
+
+        return true;
+    }
+
 public:
     std::shared_ptr<Object> shape;
 };

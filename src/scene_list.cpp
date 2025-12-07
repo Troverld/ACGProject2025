@@ -233,7 +233,7 @@ void scene_5(Scene& world, Camera& cam, float aspect) {
     auto mat_noise  = std::make_shared<Lambertian>(perlin);
     
     // Ground
-    world.add(std::make_shared<Sphere>(glm::vec3(0, -1000, 0), 1000, mat_ground));
+    world.add(std::make_shared<Sphere>(glm::vec3(0.0f, -1000.0f, 0.0f), 1000.0f, mat_ground));
 
     // Objects
     // world.add(std::make_shared<Sphere>(glm::vec3(0, 1, 0), 1.0f, mat_glass));      // Center: Glass
@@ -247,17 +247,17 @@ void scene_5(Scene& world, Camera& cam, float aspect) {
     auto norm_tex = std::make_shared<ImageTexture>("assets/texture/broken_brick_wall/broken_brick_wall_nor_gl_1k.png");
     auto mat_brick = std::make_shared<Lambertian>(diff_tex);
     mat_brick->set_normal_map(norm_tex);
-    world.add(std::make_shared<Sphere>(glm::vec3(4.0, 1.0, 0.0), 1.0, mat_brick)); 
+    world.add(std::make_shared<Sphere>(glm::vec3(4.0f, 1.0f, 0.0f), 1.0f, mat_brick)); 
     auto light_mat = std::make_shared<DiffuseLight>(glm::vec3(15.0f, 15.0f, 15.0f));
-    world.add(std::make_shared<Sphere>(glm::vec3(4.0, 0.0, 1.3), 0.5, light_mat));
+    world.add(std::make_shared<Sphere>(glm::vec3(4.0f, 0.0f, 1.3f), 0.5f, light_mat));
 
     // Camera
-    glm::vec3 lookfrom(13, 2, 3);
-    glm::vec3 lookat(0, 0, 0);
+    glm::vec3 lookfrom(13.0f, 2.0f, 3.0f);
+    glm::vec3 lookat(0.0f, 0.0f, 0.0f);
     float dist_to_focus = 10.0f;
     float aperture = 0.1f; // Enable Depth of Field
 
-    cam = Camera(lookfrom, lookat, glm::vec3(0,1,0), 20.0f, aspect, aperture, dist_to_focus);
+    cam = Camera(lookfrom, lookat, glm::vec3(0.0f,1.0f,0.0f), 20.0f, aspect, aperture, dist_to_focus);
     
     // Environment Lighting (Background)
     world.set_background(std::make_shared<SolidColor>(0.7f, 0.8f, 1.0f));

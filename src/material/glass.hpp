@@ -53,6 +53,8 @@ public:
 
     virtual bool is_emissive() const override { return false; }
 
+    virtual bool is_specular() const override { return true; }
+
 private:
     /**
      * @brief Schlick's approximation for reflectance.

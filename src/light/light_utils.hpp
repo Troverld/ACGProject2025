@@ -39,4 +39,26 @@ public:
      * @param total_photons For energy normalization
      */
     virtual void emit(glm::vec3& p_pos, glm::vec3& p_dir, glm::vec3& p_power, float total_photons) const = 0;
+
+    /**
+     * @brief Emit a photon directed towards a specific bounding sphere.
+     * 
+     * @param p_pos [out] Start point on light
+     * @param p_dir [out] Emit direction
+     * @param p_power [out] Photon energy (scaled by solid angle probability)
+     * @param total_photons Number of photons we PLAN to emit in this batch (for normalization)
+     * @param target_center Center of the target object
+     * @param target_radius Radius of the target object
+     * @return true if emission was successful (e.g. target is visible from light)
+     */
+    virtual bool emit_targeted(
+        glm::vec3& p_pos, 
+        glm::vec3& p_dir, 
+        glm::vec3& p_power, 
+        float total_photons,
+        const Object& target
+    ) const {
+        emit(p_pos, p_dir, p_power, total_photons);
+        return true;
+    }
 };
