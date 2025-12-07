@@ -29,9 +29,9 @@ const float ASPECT_RATIO = 16.0f / 9.0f;
 
 // Photon Mapping Settings (Only used for Scene 2 usually)
 const int NUM_PHOTON = 5000000; 
-const float CAUSTIC_RADIUS = 5.0f;
-const float GLOBAL_RADIUS = 20.0f;
-const int K_NEAREST = 500;
+const float CAUSTIC_RADIUS = 1.0f;
+const float GLOBAL_RADIUS = 4.0f;
+const int K_NEAREST = 100;
 const int FINAL_GATHER_BOUND = 8;
 
 // ==========================

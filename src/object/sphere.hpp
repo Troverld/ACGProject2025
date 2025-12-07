@@ -85,7 +85,7 @@ public:
      */
     virtual float pdf_value(const glm::vec3& o, const glm::vec3& v) const override {
         HitRecord rec;
-        if (!this->intersect(Ray(o, v), 0.001f, Infinity, rec)) return 0.0f;
+        if (!this->intersect(Ray(o, v), SHADOW_EPSILON, Infinity, rec)) return 0.0f;
 
         glm::vec3 direction = center - o;
         float dist_squared = glm::dot(direction, direction);

@@ -89,6 +89,8 @@ public:
     }
     
     virtual bool is_emissive() const override { return false; }
+    
+    virtual bool is_specular() const override { return false; }
 
 public:
     std::shared_ptr<Texture> albedo;

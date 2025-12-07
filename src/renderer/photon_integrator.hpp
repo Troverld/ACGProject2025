@@ -360,6 +360,11 @@ private:
 
         if (neighbors.empty()) return glm::vec3(0.0f);
 
+        max_dist_sq = 0.0f;
+        for (const auto& np : neighbors)
+            if (max_dist_sq < np.dist_sq)
+                max_dist_sq = np.dist_sq;
+
         float max_dist = std::sqrt(max_dist_sq);
         glm::vec3 flux_sum(0.0f);
 

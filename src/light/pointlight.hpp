@@ -49,18 +49,28 @@ public:
 
     virtual void emit(glm::vec3& p_pos, glm::vec3& p_dir, glm::vec3& p_power, float total_photons) const override {
         p_pos = position;
-        
-        // Uniform Spherical Sampling
-        float u1 = random_float();
-        float u2 = random_float();
-        float z = 1.0f - 2.0f * u1;
-        float r = std::sqrt(std::max(0.0f, 1.0f - z * z));
-        float phi = 2.0f * PI * u2;
-        p_dir = glm::vec3(r * cos(phi), r * sin(phi), z);
+        p_dir = random_unit_vector();
 
         // Total Flux = 4 * PI * Intensity
         // Power per photon = Flux / N
         p_power = (intensity * 4.0f * PI) / total_photons;
+    }
+
+    virtual bool emit_targeted(
+        glm::vec3& p_pos, glm::vec3& p_dir, glm::vec3& p_power, float total_photons, const Object& target
+    ) const override {
+        p_pos = position;
+        glm::vec3 vec_to_target = target.random_pointing_vector(p_pos);
+        float dist = glm::length(vec_to_target);
+        if (dist <= EPSILON) return false;
+        p_dir = vec_to_target / dist;
+        float pdf_dir = target.pdf_value(p_pos, p_dir);
+        if (pdf_dir <= EPSILON) return false;
+        // Power_new = Power_old * Weight 
+        //           = (Intensity * 4PI / N) * (1 / (4PI * target_pdf))
+        //           = Intensity / (N * target_pdf)
+        p_power = intensity  / (total_photons * pdf_dir);
+        return true;
     }
 
 public:

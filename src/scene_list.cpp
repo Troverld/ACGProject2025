@@ -88,12 +88,14 @@ void scene_cornell_smoke_caustics(Scene& world, Camera& cam, float aspect) {
     world.add(std::make_shared<Triangle>(glm::vec3(213.0f,554.0f,227.0f), glm::vec3(343.0f,554.0f,227.0f), glm::vec3(343.0f,554.0f,332.0f), light));
     world.add(std::make_shared<Triangle>(glm::vec3(213.0f,554.0f,227.0f), glm::vec3(343.0f,554.0f,332.0f), glm::vec3(213.0f,554.0f,332.0f), light));
 
+    world.add_light(std::make_shared<PointLight>(glm::vec3(120.0f,239.0f,127.0f), glm::vec3(4e3f, 8e3f, 1e3f)));
+
     // Glass Sphere for Caustics
     world.add(std::make_shared<Sphere>(glm::vec3(190.0f, 90.0f, 190.0f), 90.0f, glass));
 
     // Fog / Smoke Block
     auto boundary_fog = std::make_shared<Sphere>(glm::vec3(360.0f, 150.0f, 360.0f), 80.0f, white); // Using Sphere as boundary for simplicity
-    // auto boundary_fireball = std::make_shared<Sphere>(glm::vec3(410.0f, 200.0f, 250.0f), 80.0f, white); // Using Sphere as boundary for simplicity
+    auto boundary_fireball = std::make_shared<Sphere>(glm::vec3(410.0f, 200.0f, 250.0f), 80.0f, white); // Using Sphere as boundary for simplicity
     
     // Mesh (Bunny)
     auto boundary_bunny = std::make_shared<Mesh>(
