@@ -1,9 +1,8 @@
 #pragma once
 
-#include "object.hpp"
+#include "object_utils.hpp"
 #include "../material/phase_function.hpp"
-#include "../texture/texture.hpp"
-#include <memory>
+#include "../texture/texture_utils.hpp"
 #include <iostream>
 
 /**

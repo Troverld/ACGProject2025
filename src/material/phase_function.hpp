@@ -1,8 +1,7 @@
 #pragma once
 
-#include "material.hpp"
+#include "material_utils.hpp"
 #include "../texture/solid_color.hpp"
-#include "../core/utils.hpp"
 #include "../core/onb.hpp"
 
 /**

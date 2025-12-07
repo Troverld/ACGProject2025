@@ -1,8 +1,6 @@
 #pragma once
 
-#include "object.hpp"
-#include <glm/glm.hpp>
-#include <memory>
+#include "object_utils.hpp"
 
 class MovingSphere : public Object {
 public:

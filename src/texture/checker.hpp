@@ -1,5 +1,5 @@
 #pragma once
-#include "texture.hpp"
+#include "texture_utils.hpp"
 #include "solid_color.hpp"
 #include <memory>
 #include <cmath>

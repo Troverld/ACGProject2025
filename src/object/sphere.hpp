@@ -1,9 +1,7 @@
 #pragma once
 
-#include "object.hpp"
+#include "object_utils.hpp"
 #include "../core/onb.hpp"
-#include <glm/glm.hpp>
-#include <memory>
 
 /**
  * @brief A Sphere object defined by a center and a radius.

@@ -1,5 +1,5 @@
 #pragma once
-#include "texture.hpp"
+#include "texture_utils.hpp"
 
 /**
  * @brief A texture that returns a constant color regardless of coordinates.

@@ -1,6 +1,5 @@
 #pragma once
 
-#include "object.hpp"
 #include "triangle.hpp"
 #include "../accel/BVH.hpp"
 #include "tiny_obj_loader.h"

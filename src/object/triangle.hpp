@@ -1,9 +1,6 @@
 #pragma once
 
-#include "object.hpp"
-#include "../core/utils.hpp"
-#include <glm/glm.hpp>
-#include <memory>
+#include "object_utils.hpp"
 
 /**
  * @brief Triangle primitive.

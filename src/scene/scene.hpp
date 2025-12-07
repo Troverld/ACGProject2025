@@ -1,11 +1,11 @@
 #pragma once
 
-#include "object.hpp"
-#include "light.hpp"
+#include "../object/object_utils.hpp"
+#include "../texture/texture_utils.hpp"
+#include "../light/light_agg.hpp"
 #include <vector>
 #include <memory>
 #include "../accel/BVH.hpp"
-#include "../texture/texture.hpp"
 /**
  * @brief A container for all objects in the scene.
  * ~~Also implements the Object interface, so a Scene can be treated as a single Hittable.~~

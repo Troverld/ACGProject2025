@@ -1,7 +1,7 @@
 #pragma once
 
 #include "../core/utils.hpp"
-#include "../scene/object.hpp"
+#include "../object/object_utils.hpp"
 #include <algorithm>
 #include <vector>
 #include <memory>

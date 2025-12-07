@@ -1,20 +1,9 @@
 #pragma once
 
 #include "../core/ray.hpp"
-#include "../scene/object.hpp"
 #include <glm/glm.hpp>
-
-/**
- * @brief Class to record detailed information of a scatter.
- */
-struct ScatterRecord {
-    Ray specular_ray;       // The reflected ray if the surface is mirror.
-    bool is_specular;       // Whether the surface is mirror.
-    glm::vec3 attenuation;  // Albedo.
-    float pdf;              // If the surface is not mirror, then the PDF of the sampled direction is recorded.
-    glm::vec3 shading_normal;  // Perturbed normal from normal map (if any).
-    ScatterRecord(glm::vec3 normal) : shading_normal(normal) {} // A normal initialization is a must. We should always have a valid normal.
-};
+#include "../core/utils.hpp"
+#include "../core/record.hpp"
 
 
 

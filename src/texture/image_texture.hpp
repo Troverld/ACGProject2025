@@ -1,6 +1,6 @@
 #pragma once
 
-#include "texture.hpp"
+#include "texture_utils.hpp"
 #include "../core/utils.hpp"
 #include <iostream>
 #include <algorithm> // for std::clamp

@@ -1,16 +1,10 @@
 #pragma once
 
 #include "scene/scene.hpp"
-#include "scene/sphere.hpp"
-#include "scene/moving_sphere.hpp"
-#include "scene/triangle.hpp"
-#include "scene/mesh.hpp"
 #include "scene/camera.hpp"
-#include "scene/volume.hpp"
-#include "material/bsdf.hpp"
-#include "texture/checker.hpp"
-#include "texture/perlin.hpp"
-#include "texture/image_texture.hpp"
+#include "object/object_agg.hpp"
+#include "material/material_agg.hpp"
+#include "texture/texture_agg.hpp"
 
 // =======================================================================
 // Scene 1: Advanced Materials & Textures

@@ -2,21 +2,9 @@
 
 #include "../scene/scene.hpp"
 #include "../scene/camera.hpp"
-#include "../material/material.hpp"
+#include "../material/material_utils.hpp"
 #include "../core/utils.hpp"
 #include <glm/glm.hpp>
-
-/**
- * @brief Utility for Power Heuristic.
- * Balance Heuristic: f^1 / (f^1 + g^1)
- * Power Heuristic:   f^2 / (f^2 + g^2) (Usually works better)
- */
-inline float power_heuristic(float pdf_f, float pdf_g) {
-    float f2 = pdf_f * pdf_f;
-    float g2 = pdf_g * pdf_g;
-    float denom = f2 + g2;
-    return denom > 0.0f ? f2 / denom : 0.0f;
-}
 
 /**
  * @brief Abstract base class for rendering algorithms.
@@ -32,6 +20,17 @@ public:
 
 protected:
 
+    /**
+     * @brief Utility for Power Heuristic.
+     * Balance Heuristic: f^1 / (f^1 + g^1)
+     * Power Heuristic:   f^2 / (f^2 + g^2) (Usually works better)
+     */
+    float power_heuristic(float pdf_f, float pdf_g) const {
+        float f2 = pdf_f * pdf_f;
+        float g2 = pdf_g * pdf_g;
+        float denom = f2 + g2;
+        return denom > 0.0f ? f2 / denom : 0.0f;
+    }
     /**
      * @brief Clamps the radiance to avoid fireflies.
      * @param L The radiance to clamp.
