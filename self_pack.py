@@ -8,14 +8,14 @@ MANUAL_WHITELIST = {
     "envirlight.hpp",
     "pointlight.hpp",
     "mesh.hpp",
-    "moving_sphere.hpp",
+    # "moving_sphere.hpp",
     "sphere.hpp",
     "triangle.hpp",
-    "volume.hpp",
+    # "volume.hpp",
     "scene.hpp",
     "image_texture.hpp",
-    # "integrator_utils.hpp",
-    # "path_integrator.hpp",
+    "integrator_utils.hpp",
+    "path_integrator.hpp",
 }
 
 

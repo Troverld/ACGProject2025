@@ -33,7 +33,7 @@ const float PADDING_EPSILON = 1e-3f;
  */
 inline float random_float() {
     static thread_local std::mt19937 generator(std::random_device{}()); 
-    std::uniform_real_distribution<float> distribution(0.0f, 1.0f);
+    static std::uniform_real_distribution<float> distribution(0.0f, 1.0f);
     return distribution(generator);
 }
 
@@ -155,6 +155,31 @@ inline void get_sphere_uv(const glm::vec3& p, float& u, float& v) {
 
     u = phi / (2 * PI);
     v = theta / PI;
+}
+
+/**
+ * @brief Inverse of get_sphere_uv. Maps UV [0,1] back to a unit vector on the sphere.
+ * Ensures strict consistency with the get_sphere_uv coordinate system.
+ * 
+ * @param u Horizontal coordinate [0, 1]
+ * @param v Vertical coordinate [0, 1]
+ * @return glm::vec3 Normalized direction vector
+ */
+inline glm::vec3 uv_to_sphere(float u, float v) {
+    float theta = v * PI;
+    float phi = u * 2.0f * PI;
+
+    float sin_theta = std::sin(theta);
+    float cos_theta = std::cos(theta);
+    float sin_phi = std::sin(phi);
+    float cos_phi = std::cos(phi);
+
+    // Derived from get_sphere_uv logic:
+    // y = -cos(theta)
+    // x = -sin(theta) * cos(phi)
+    // z = sin(theta) * sin(phi)
+    
+    return glm::vec3(-sin_theta * cos_phi, -cos_theta, sin_theta * sin_phi);
 }
 
 inline float grayscale(const glm::vec3& color) {

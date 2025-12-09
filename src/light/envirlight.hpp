@@ -50,7 +50,7 @@ public:
             
             this->est_power = intensity * 4.0f * PI;
         }
-        
+
         if(this -> est_power < EPSILON) this -> est_power = EPSILON;
     }
 
@@ -73,30 +73,9 @@ public:
             
             if (map_pdf == 0) { pdf = 0; return glm::vec3(0); }
 
-            // UV to Spherical Direction
-            // v=0 is Top (Theta=0), v=1 is Bottom (Theta=PI)
-            float theta = uv.y * PI;
-            float phi = uv.x * 2.0f * PI; 
-            
-            // Adjust phi offset if necessary to match texture mapping convention.
-            // Usually standard equirectangular has u=0.5 at +Z or similar.
-            // Matching standard: x = sinT cosP, z = sinT sinP, y = cosT (if Y up)
-            // But we need to match get_sphere_uv logic: 
-            // u = phi / 2PI + 0.5 -> phi = (u - 0.5) * 2PI
-            // Let's stick to the definition derived from get_sphere_uv used in sphere.hpp
-            phi += PI; // Align with atan2 logic in get_sphere_uv
+            wi = uv_to_sphere(uv.x, uv.y);
 
-            float sin_theta = std::sin(theta);
-            float cos_theta = std::cos(theta);
-
-            // Convert spherical (r=1) to Cartesian
-            // Note: Must match get_sphere_uv implementation!
-            // get_sphere_uv: theta = acos(-p.y), phi = atan2(-p.z, p.x) + PI
-            // Therefore: p.y = -cos(theta)
-            // p.x = sin(theta) * cos(phi - PI) = -sin(theta)cos(phi)
-            // p.z = -sin(theta) * sin(phi - PI) = sin(theta)sin(phi)
-            // Wait, standard inverse is simpler:
-            wi = glm::vec3(sin_theta * std::cos(phi), -cos_theta, sin_theta * std::sin(phi)); 
+            float sin_theta = std::sin(uv.y * PI); 
             
             // PDF conversion: Area Measure (UV) -> Solid Angle Measure
             // pdf_solid = pdf_uv / (2 * PI^2 * sin(theta))
