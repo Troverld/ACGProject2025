@@ -61,4 +61,12 @@ public:
         emit(p_pos, p_dir, p_power, total_photons);
         return true;
     }
+
+    /**
+     * @brief Returns the power (total emitted flux) of the light source. Used for light importance sampling.
+     */
+    virtual float power() const {return est_power;}
+
+protected:
+    float est_power = 1.0f;
 };

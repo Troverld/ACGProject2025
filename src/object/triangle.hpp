@@ -153,7 +153,7 @@ public:
      * @brief Uniformly samples a point on the triangle surface using Barycentric coordinates.
      * Area is precomputed.
      */
-    virtual void sample_surface(glm::vec3& pos, glm::vec3& normal, float& pdf_area) const override {
+    virtual void sample_surface(glm::vec3& pos, glm::vec3& normal, float& area) const override {
         float sqrt_r1 = sqrt(random_float());
         float r2 = random_float();
         float u = 1.0f - sqrt_r1;
@@ -162,7 +162,7 @@ public:
         pos = (1.0f - u - v) * v0 + u * v1 + v * v2;
         // Use face normal for sampling area light direction for consistency
         normal = face_normal; 
-        pdf_area = 1.0f / area;
+        area = this->area;
     }
 
     virtual Material* get_material() const override { return mat_ptr.get(); }

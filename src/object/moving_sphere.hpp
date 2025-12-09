@@ -40,6 +40,24 @@ public:
         return true;
     }
 
+    virtual void sample_surface(glm::vec3& pos, glm::vec3& normal, float& area) const override {
+        // 1. Generate a random point on a unit sphere (Direction from center)
+        glm::vec3 rand_dir = random_unit_vector();
+        float time = random_float(time0, time1);
+        glm::vec3 center = center_at(time);
+        // 2. Compute position: Center + Radius * direction
+        pos = center + rand_dir * radius;
+        
+        // 3. Normal is simply the direction from center
+        normal = rand_dir;
+        
+        // 4. PDF = 1 / Total Area
+        area = 4.0f * PI * radius * radius;
+    }
+    
+    virtual glm::vec3 random_pointing_vector(const glm::vec3& origin) const override{return glm::vec3(0.0f);}
+    virtual float pdf_value(const glm::vec3& origin, const glm::vec3& wi) const override {return 0.0f;}
+
     virtual bool bounding_box(float _t0, float _t1, AABB& output_box) const override {
         AABB box0(
             center_at(_t0) - glm::vec3(radius),

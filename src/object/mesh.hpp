@@ -46,16 +46,47 @@ public:
         return bvh_root->bounding_box(time0, time1, output_box);
     }
 
-    // Meshes are usually complex, sampling them as a single area light is inefficient/complex.
-    // So we don't implement pdf_value/random_pointing_vector here directly.
-    // If a Mesh needs to emit light, the Scene logic promotes its individual Triangles to lights,
-    // or we need a MeshAreaLight wrapper. Currently defaults to 0.
+    /**
+     * @brief Sample a point uniformly on the surface of the mesh.
+     * Uses an area-weighted distribution to select a triangle, then samples the triangle.
+     */
+    virtual void sample_surface(glm::vec3& pos, glm::vec3& normal, float& area) const override {
+        if (!triangle_distribution) {
+            area = 0.0f;
+            return;
+        }
+
+        // 1. Select a triangle based on area
+        float pdf_choice;
+        float u_remapped;
+        int idx = triangle_distribution->sample_discrete(random_float(), pdf_choice, u_remapped);
+
+        // 2. Sample the selected triangle
+        // Note: The object in 'triangles' is technically shared_ptr<Object>, cast to Triangle if needed
+        // but virtual function call works since Triangle implements it.
+        triangles[idx]->sample_surface(pos, normal, area);
+        area = sum_area;
+    }
+
+    virtual glm::vec3 random_pointing_vector(const glm::vec3& origin) const override{return glm::vec3(0.0f);}
+    virtual float pdf_value(const glm::vec3& origin, const glm::vec3& wi) const override {return 0.0f;}
     
     virtual Material* get_material() const override { return nullptr; } // Material is managed by triangles
+
+    /**
+     * @brief Propagate light ID to all contained triangles.
+     * This ensures that when a ray hits a specific triangle, rec.object->get_light_id() returns the correct value.
+     */
+    virtual void set_light_id(int id) override {
+        Object::set_light_id(id); // Set ID for the Mesh itself
+        for (auto& tri : triangles) tri->set_light_id(id);
+    }
 
 private:
     std::shared_ptr<BVHNode> bvh_root;
     std::vector<std::shared_ptr<Object>> triangles;
+    std::unique_ptr<Distribution1D> triangle_distribution;
+    float sum_area = 0.0f;
 
     void load_obj(const std::string& filename, std::shared_ptr<Material> mat,
                   glm::vec3 translation, float scale, glm::vec3 rot_axis, float rot_deg) 
@@ -103,7 +134,7 @@ private:
         };
 
         std::cout << "[Mesh] Loading " << filename << " (" << shapes.size() << " shapes)..." << std::endl;
-
+        std::vector<float> triangle_areas;
         for (size_t s = 0; s < shapes.size(); s++) {
             size_t index_offset = 0;
             
@@ -156,22 +187,29 @@ private:
                 }
 
                 if (has_normals) {
-                    triangles.push_back(std::make_shared<Triangle>(
+                    auto tri = std::make_shared<Triangle>(
                         v[0], v[1], v[2], n[0], n[1], n[2], mat, uv[0], uv[1], uv[2]
-                    ));
+                    );
+                    triangles.push_back(tri);
+                    triangle_areas.push_back(tri->area);
                 } else {
-                    triangles.push_back(std::make_shared<Triangle>(
+                    auto tri = std::make_shared<Triangle>(
                         v[0], v[1], v[2], mat, uv[0], uv[1], uv[2]
-                    ));
+                    );
+                    triangles.push_back(tri);
+                    triangle_areas.push_back(tri->area);
                 }
 
                 index_offset += fv;
             }
         }
 
+        sum_area = std::accumulate(triangle_areas.begin(), triangle_areas.end(), 0.0f);
+
         if (!triangles.empty()) {
             std::cout << "[Mesh] Building Internal BVH for " << triangles.size() << " triangles..." << std::endl;
             bvh_root = std::make_shared<BVHNode>(triangles, 0.0f, 1.0f);
+            triangle_distribution = std::make_unique<Distribution1D>(triangle_areas.data(), triangle_areas.size());
         }
     }
 };

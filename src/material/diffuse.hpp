@@ -9,24 +9,16 @@
  */
 class Lambertian : public Material {
 public:
-    /**
-     * @brief Construct using a solid color.
-     */
-    Lambertian(const glm::vec3& a) : albedo(std::make_shared<SolidColor>(a)) {}
 
     /**
      * @brief Construct using a texture.
      */
-    Lambertian(std::shared_ptr<Texture> a) : albedo(a) {}
+    Lambertian(std::shared_ptr<Texture> a, std::shared_ptr<Texture> n_map = nullptr) : albedo(a), normal_map(n_map) {}
     
-
     /**
-     * @brief Set a normal map texture.
+     * @brief Construct using a solid color.
      */
-    void set_normal_map(std::shared_ptr<Texture> n_map) {
-        normal_map = n_map;
-    }
-
+    Lambertian(const glm::vec3& a, std::shared_ptr<Texture> n_map = nullptr) : Lambertian(std::make_shared<SolidColor>(a), n_map) {}
 
     virtual bool scatter(const Ray& r_in, const HitRecord& rec, ScatterRecord& srec) const override {
         srec.is_specular = false; // a diffuse event

@@ -3,6 +3,7 @@
 #include "../scene/scene.hpp"
 #include "../scene/camera.hpp"
 #include "../material/material_utils.hpp"
+#include "../core/distribution.hpp"
 #include "../core/utils.hpp"
 #include <glm/glm.hpp>
 
@@ -19,6 +20,25 @@ public:
     virtual glm::vec3 estimate_radiance(const Ray& r, const Scene& scene) const = 0;
 
 protected:
+    std::unique_ptr<Distribution1D> light_distribution;
+
+    /**
+     * @brief Build the light distribution based on power.
+     * Is automatically integrated into construction of the integrator.
+     */
+    void preprocess(const Scene& scene) {
+        std::vector<float> powers;
+        for (const auto& light : scene.lights) {
+            powers.push_back(light->power());
+        }
+        if (scene.env_light) {
+            powers.push_back(scene.env_light->power());
+        }
+
+        if (!powers.empty()) {
+            light_distribution = std::make_unique<Distribution1D>(powers.data(), powers.size());
+        }
+    }
 
     /**
      * @brief Utility for Power Heuristic.
@@ -54,11 +74,21 @@ protected:
      * @return glm::vec3 The UNWEIGHTED direct radiance (not multiplied by path throughput yet).
      */
     glm::vec3 sample_one_light(const Scene& scene, const HitRecord& rec, const ScatterRecord& srec, const Ray& current_ray) const {
-        size_t n_lights = scene.lights.size() + (scene.env_light ? 1 : 0);
-        if (n_lights == 0) return glm::vec3(0.0f);
-        int light_idx = random_int(0, static_cast<int>(n_lights) - 1);
-        const auto& light = ((light_idx == scene.lights.size()) ? scene.env_light: scene.lights[light_idx]);
-        float light_weight = static_cast<float>(n_lights); // 1 / (1/N)
+        if (!light_distribution || light_distribution->count() == 0) return glm::vec3(0.0f);
+        // 1. Sample a light source based on its power
+        float light_select_pdf;
+        float u_remap; // Remapped random number (unused here but required by signature)
+        int light_idx = light_distribution->sample_discrete(random_float(), light_select_pdf, u_remap);
+
+        const Light* light;
+        size_t n_scene_lights = scene.lights.size();
+
+        // Determine which light was picked (Scene Lights vs Env Light)
+        if (light_idx < static_cast<int>(n_scene_lights)) {
+            light = scene.lights[light_idx].get();
+        } else {
+            light = scene.env_light.get();
+        }
 
         glm::vec3 to_light;
         float light_pdf; // PDF of sampling this point on light
@@ -84,10 +114,7 @@ protected:
         // Calculate BSDF PDF for this NEE direction
         float bsdf_pdf = rec.mat_ptr->scattering_pdf(current_ray, rec, shadow_ray, srec.shading_normal);
         
-        // MIS Weight: balance Light sampling vs BSDF sampling
-        // We selected a specific light (prob 1/N), then a point on it (light_pdf).
-        // Total light technique PDF = (1/N) * light_pdf
-        float total_light_pdf = light_pdf / light_weight; 
+        float total_light_pdf = light_select_pdf * light_pdf;
 
         float weight = power_heuristic(total_light_pdf, bsdf_pdf);
 
@@ -100,15 +127,20 @@ protected:
     glm::vec3 eval_environment(const Scene& scene, const Ray& r, float bsdf_pdf, bool is_specular) const {
         glm::vec3 env_color = scene.sample_background(r);
         
-        // If pure specular bounce or no lights to sample, take full contribution
-        size_t n_lights = scene.lights.size() + (scene.env_light ? 1 : 0);
-        if (is_specular || n_lights == 0) {
+        // If pure specular bounce or no lights, take full contribution
+        if (is_specular || !light_distribution || !scene.env_light) {
             return env_color;
         }
 
-        // Apply MIS otherwise
-        float light_select_pdf = 1.0f / static_cast<float>(n_lights);
-        float light_dir_pdf = 1.0f / (4.0f * PI); // Assumption: Uniform Env Map
+        // MIS: Calculate the probability that we would have picked the EnvLight via sample_one_light
+        // The EnvLight index is always at the end of the distribution array
+        int env_idx = static_cast<int>(scene.lights.size());
+        float light_select_pdf = light_distribution->pdf_discrete(env_idx);
+        
+        // PDF of sampling this direction on the EnvLight (handled by envirlight.hpp logic)
+        // Note: For infinite lights, pdf_value returns solid angle PDF.
+        float light_dir_pdf = scene.env_light->pdf_value(glm::vec3(0), r.direction());
+        
         float total_light_pdf = light_select_pdf * light_dir_pdf;
 
         float weight = power_heuristic(bsdf_pdf, total_light_pdf);
@@ -121,15 +153,23 @@ protected:
     glm::vec3 eval_emission(const Scene& scene, const HitRecord& rec, const Ray& r, float bsdf_pdf, bool is_specular) const {
         glm::vec3 emitted = rec.mat_ptr->emitted(rec.u, rec.v, rec.p);
         
-        size_t n_lights = scene.lights.size() + (scene.env_light ? 1 : 0);
-        if (is_specular || n_lights == 0) {
+        // If pure specular or no light sampling setup, return full emission
+        if (is_specular || !light_distribution) {
             return emitted;
         }
 
-        // MIS: PDF of sampling this point on the area light
-        float area_pdf = rec.object->pdf_value(r.origin(), r.direction());
-        float light_select_pdf = 1.0f / static_cast<float>(n_lights);
-        float total_light_pdf = area_pdf * light_select_pdf;
+        // MIS: We hit a light geometry via BSDF. We need to find P(picking this light via NEE).
+        // This requires finding the index of the light in scene.lights that corresponds to the hit object.
+        int light_idx = rec.object->get_light_id();
+
+        // If light_idx is -1, it means this object emits light but wasn't registered 
+        // in the scene.lights list (shouldn't happen with correct Scene::add logic), 
+        // or we hit the back of a single-sided light.
+        if (light_idx < 0) return emitted;
+
+        float light_select_pdf = light_distribution->pdf_discrete(light_idx);
+        float area_pdf = rec.object->pdf_value(r.origin(), r.direction()); // Solid Angle PDF
+        float total_light_pdf = light_select_pdf * area_pdf;
 
         float weight = power_heuristic(bsdf_pdf, total_light_pdf);
         return emitted * weight;

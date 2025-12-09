@@ -164,7 +164,7 @@ public:
      * @brief Uniformly samples a point on the sphere surface.
      * Area = 4 * PI * r^2
      */
-    virtual void sample_surface(glm::vec3& pos, glm::vec3& normal, float& pdf_area) const override {
+    virtual void sample_surface(glm::vec3& pos, glm::vec3& normal, float& area) const override {
         // 1. Generate a random point on a unit sphere (Direction from center)
         glm::vec3 rand_dir = random_unit_vector();
         
@@ -174,9 +174,7 @@ public:
         // 3. Normal is simply the direction from center
         normal = rand_dir;
         
-        // 4. PDF = 1 / Total Area
-        float area = 4.0f * PI * radius * radius;
-        pdf_area = 1.0f / area;
+        area = 4.0f * PI * radius * radius;
     }
     
     virtual Material* get_material() const override { return mat_ptr.get(); }

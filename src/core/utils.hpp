@@ -156,3 +156,7 @@ inline void get_sphere_uv(const glm::vec3& p, float& u, float& v) {
     u = phi / (2 * PI);
     v = theta / PI;
 }
+
+inline float grayscale(const glm::vec3& color) {
+    return 0.2126f * color.r + 0.7152f * color.g + 0.0722f * color.b;
+}

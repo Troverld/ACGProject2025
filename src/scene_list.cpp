@@ -40,8 +40,7 @@ void scene_materials_textures(Scene& world, Camera& cam, float aspect) {
     // 这里假设你有图片，如果没有，会自动回退或报错，可根据实际情况注释掉
     auto diff_tex = std::make_shared<ImageTexture>("assets/texture/red_brick/red_brick_diff_1k.png");
     auto norm_tex = std::make_shared<ImageTexture>("assets/texture/red_brick/red_brick_nor_gl_1k.png");
-    auto mat_brick = std::make_shared<Lambertian>(diff_tex);
-    mat_brick->set_normal_map(norm_tex);
+    auto mat_brick = std::make_shared<Lambertian>(diff_tex, norm_tex);
     world.add(std::make_shared<Sphere>(glm::vec3(0, 0.5, 3), 0.5f, mat_brick)); 
 
     // Camera
@@ -247,8 +246,7 @@ void scene_5(Scene& world, Camera& cam, float aspect) {
     // 这里假设你有图片，如果没有，会自动回退或报错，可根据实际情况注释掉
     auto diff_tex = std::make_shared<ImageTexture>("assets/texture/broken_brick_wall/broken_brick_wall_diff_1k.png");
     auto norm_tex = std::make_shared<ImageTexture>("assets/texture/broken_brick_wall/broken_brick_wall_nor_gl_1k.png");
-    auto mat_brick = std::make_shared<Lambertian>(diff_tex);
-    mat_brick->set_normal_map(norm_tex);
+    auto mat_brick = std::make_shared<Lambertian>(diff_tex, norm_tex);
     world.add(std::make_shared<Sphere>(glm::vec3(4.0f, 1.0f, 0.0f), 1.0f, mat_brick)); 
     auto light_mat = std::make_shared<DiffuseLight>(glm::vec3(15.0f, 15.0f, 15.0f));
     world.add(std::make_shared<Sphere>(glm::vec3(4.0f, 0.0f, 1.3f), 0.5f, light_mat));

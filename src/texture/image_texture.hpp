@@ -82,7 +82,8 @@ public:
         return glm::mix(c0, c1, t);
     }
 
-private:
+    int get_width() const { return width; } // Added for Importance Sampling Support
+    int get_height() const { return height; } // Added for Importance Sampling Support
     /**
      * @brief Helper to fetch pixel color safely (handles wrapping/clamping).
      */

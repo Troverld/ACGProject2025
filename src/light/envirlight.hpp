@@ -2,6 +2,8 @@
 
 #include "../texture/texture_utils.hpp"
 #include "light_utils.hpp"
+#include "../core/distribution.hpp"
+#include "../texture/image_texture.hpp"
 /**
  * @brief Infinite Area Light (Environment Light).
  * Represents a distant light source surrounding the scene (e.g., HDRI).
@@ -13,7 +15,44 @@ public:
      * @brief Construct a new Environment Light object.
      * @param tex The background texture (HDRI or solid color).
      */
-    EnvironmentLight(std::shared_ptr<Texture> tex) : texture(tex) {}
+    EnvironmentLight(std::shared_ptr<Texture> tex) : texture(tex) {
+        // Try to cast to ImageTexture to build Importance Sampling CDF
+        auto img_tex = std::dynamic_pointer_cast<ImageTexture>(tex);
+        
+        if (img_tex) {
+            int w = img_tex->get_width();
+            int h = img_tex->get_height();
+            std::vector<float> luminance(w * h);
+
+            for (int v = 0; v < h; ++v) {
+                // Equirectangular mapping distortion correction: sin(theta)
+                float vp = (v + 0.5f) / float(h);
+                float theta = PI * vp;
+                float sin_theta = std::sin(theta);
+                
+                for (int u = 0; u < w; ++u) {
+                    glm::vec3 color = img_tex->get_pixel(u, v);
+                    float lum = grayscale(color);
+                    luminance[v * w + u] = lum * sin_theta;
+                }
+            }
+            distribution = std::make_unique<Distribution2D>(luminance.data(), w, h);
+        }
+        // If it's not an ImageTexture (e.g. SolidColor), distribution remains null
+        // and we fallback to uniform sampling.
+
+        if(distribution){
+            this -> est_power = distribution->p_marginal->func_int * (4.0f * PI);
+        }else{
+            glm::vec3 center_radiance = tex->value(0.5f, 0.5f, glm::vec3(0.0f));
+            
+            float intensity = grayscale(center_radiance);
+            
+            this->est_power = intensity * 4.0f * PI;
+        }
+        
+        if(this -> est_power < EPSILON) this -> est_power = EPSILON;
+    }
 
     /**
      * @brief Samples a direction from the environment.
@@ -25,8 +64,49 @@ public:
      * @param distance Output: Distance to light (Infinity).
      * @return glm::vec3 Radiance from the environment in direction wi.
      */
+
     virtual glm::vec3 sample_li(const glm::vec3& origin, glm::vec3& wi, float& pdf, float& distance) const override {
-        // Uniform sampling on sphere
+        // Case 1: Importance Sampling with Image Map
+        if (distribution) {
+            float map_pdf;
+            glm::vec2 uv = distribution->sample_continuous(glm::vec2(random_float(), random_float()), map_pdf);
+            
+            if (map_pdf == 0) { pdf = 0; return glm::vec3(0); }
+
+            // UV to Spherical Direction
+            // v=0 is Top (Theta=0), v=1 is Bottom (Theta=PI)
+            float theta = uv.y * PI;
+            float phi = uv.x * 2.0f * PI; 
+            
+            // Adjust phi offset if necessary to match texture mapping convention.
+            // Usually standard equirectangular has u=0.5 at +Z or similar.
+            // Matching standard: x = sinT cosP, z = sinT sinP, y = cosT (if Y up)
+            // But we need to match get_sphere_uv logic: 
+            // u = phi / 2PI + 0.5 -> phi = (u - 0.5) * 2PI
+            // Let's stick to the definition derived from get_sphere_uv used in sphere.hpp
+            phi += PI; // Align with atan2 logic in get_sphere_uv
+
+            float sin_theta = std::sin(theta);
+            float cos_theta = std::cos(theta);
+
+            // Convert spherical (r=1) to Cartesian
+            // Note: Must match get_sphere_uv implementation!
+            // get_sphere_uv: theta = acos(-p.y), phi = atan2(-p.z, p.x) + PI
+            // Therefore: p.y = -cos(theta)
+            // p.x = sin(theta) * cos(phi - PI) = -sin(theta)cos(phi)
+            // p.z = -sin(theta) * sin(phi - PI) = sin(theta)sin(phi)
+            // Wait, standard inverse is simpler:
+            wi = glm::vec3(sin_theta * std::cos(phi), -cos_theta, sin_theta * std::sin(phi)); 
+            
+            // PDF conversion: Area Measure (UV) -> Solid Angle Measure
+            // pdf_solid = pdf_uv / (2 * PI^2 * sin(theta))
+            if (sin_theta == 0) pdf = 0;
+            else pdf = map_pdf / (2.0f * PI * PI * sin_theta);
+
+            distance = Infinity;
+            return texture->value(uv.x, uv.y, wi);
+        }
+        // Case 2: Uniform Sampling (Fallback)
         float u1 = random_float();
         float u2 = random_float();
         float z = 1.0f - 2.0f * u1;
@@ -43,9 +123,20 @@ public:
 
     /**
      * @brief PDF of sampling a specific direction.
-     * For Uniform Spherical Sampling, this is constant.
      */
     virtual float pdf_value(const glm::vec3& origin, const glm::vec3& wi) const override {
+        if (distribution) {
+            glm::vec3 dir = glm::normalize(wi);
+            float u, v;
+            get_sphere_uv(dir, u, v);
+            
+            float map_pdf = distribution->pdf(glm::vec2(u, v));
+            float theta = v * PI;
+            float sin_theta = std::sin(theta);
+            
+            if (sin_theta <= EPSILON) return 0.0f;
+            return map_pdf / (2.0f * PI * PI * sin_theta);
+        }
         return 1.0f / (4.0f * PI);
     }
 
@@ -67,4 +158,5 @@ public:
 
 public:
     std::shared_ptr<Texture> texture;
+    std::unique_ptr<Distribution2D> distribution;
 };

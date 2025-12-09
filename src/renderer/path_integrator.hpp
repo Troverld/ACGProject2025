@@ -6,7 +6,7 @@
  */
 class PathIntegrator : public Integrator {
 public:
-    PathIntegrator(int max_d) : max_depth(max_d) {}
+    PathIntegrator(int max_d, const Scene& scene) : max_depth(max_d) {preprocess(scene);}
 
     glm::vec3 estimate_radiance(const Ray& start_ray, const Scene& scene) const {
         Ray current_ray = start_ray;

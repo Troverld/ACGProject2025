@@ -40,6 +40,7 @@ public:
         
         // Check if the object has a material and if it is emissive
         if (object->get_material() && object->get_material()->is_emissive()) {
+            object->set_light_id(static_cast<int>(lights.size()));
             lights.push_back(std::make_shared<DiffuseAreaLight>(object));
         }
         bvh_root = nullptr; 

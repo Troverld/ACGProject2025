@@ -15,7 +15,20 @@ public:
     /**
      * @param obj The geometric object that is emitting light.
      */
-    DiffuseAreaLight(std::shared_ptr<Object> obj) : shape(obj) {}
+    DiffuseAreaLight(std::shared_ptr<Object> obj) : shape(obj) {
+        glm::vec3 pos, normal; float area;
+        shape->sample_surface(pos, normal, area);
+
+        glm::vec3 accum_emit(0.0f);
+        const int samples = 8;
+        for(int i=0; i<samples; ++i) {
+            shape->sample_surface(pos, normal, area);
+            accum_emit += shape->get_material()->emitted(0, 0, pos);
+        }
+        glm::vec3 avg_emit = accum_emit / float(samples);
+        this -> est_power = grayscale(avg_emit) * area * PI;
+        if(this -> est_power < EPSILON) this -> est_power = EPSILON;
+    }
 
     virtual glm::vec3 sample_li(const glm::vec3& origin, glm::vec3& wi, float& pdf, float& distance) const override {
         // 1. Get vector from origin to a random point on the light source
@@ -52,36 +65,29 @@ public:
 
     virtual void emit(glm::vec3& p_pos, glm::vec3& p_dir, glm::vec3& p_power, float total_photons) const override {
         glm::vec3 normal;
-        float pdf_area;
+        float area;
         
         // Calculate initial power estimate for one photon.
         // Flux (Phi) = Le * Area * PI (for Lambertian emitter)
         // Power_photon = Phi / N_emitted
-        // Note: We don't compute exact area here, we rely on the Monte Carlo estimator during emission.
-        // Estimator: Power = (Le * PI) / (pdf_area * N_emitted)
         // The cos(theta) term in Flux integral cancels out with Cosine Weighted sampling PDF (cos/PI).
 
-        shape->sample_surface(p_pos, normal, pdf_area);
+        shape->sample_surface(p_pos, normal, area);
 
         Onb uvw(normal);
         p_dir = uvw.local(random_cosine_direction());
 
         glm::vec3 Le = shape->get_material()->emitted(0, 0, p_pos);
-        
-        if (pdf_area < EPSILON) {
-            p_power = glm::vec3(0.0f);
-        } else {
-            p_power = (Le * PI) / (pdf_area * total_photons);
-        }
+        p_power = (Le * PI * area) / total_photons;
     }
 
     virtual bool emit_targeted(
         glm::vec3& p_pos, glm::vec3& p_dir, glm::vec3& p_power, float total_photons, const Object& target
     ) const override {
         glm::vec3 light_normal;
-        float pdf_pos_light;
-        shape->sample_surface(p_pos, light_normal, pdf_pos_light);
-        if (pdf_pos_light <= EPSILON) return false;
+        float area;
+        shape->sample_surface(p_pos, light_normal, area);
+        if (area <= EPSILON) return false;
 
         glm::vec3 vec_to_target = target.random_pointing_vector(p_pos);
         float dist = glm::length(vec_to_target);
@@ -98,7 +104,7 @@ public:
         
         if (pdf_dir <= EPSILON) return false;
         glm::vec3 Le = shape->get_material()->emitted(0.0f, 0.0f, p_pos);
-        float total_pdf = pdf_pos_light * pdf_dir;
+        float total_pdf = pdf_dir / area;
         p_power = (Le * cos_theta) / (total_photons * total_pdf);
 
         return true;

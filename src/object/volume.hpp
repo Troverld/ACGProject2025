@@ -111,6 +111,10 @@ public:
     virtual glm::vec3 random_pointing_vector(const glm::vec3& origin) const override {
         return boundary->random_pointing_vector(origin);
     }
+    
+    virtual void sample_surface(glm::vec3& pos, glm::vec3& normal, float& area) const override {
+        boundary->sample_surface(pos, normal, area);
+    }
 
     virtual Material* get_material() const override { return phase_function.get(); }
 

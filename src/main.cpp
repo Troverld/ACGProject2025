@@ -41,7 +41,7 @@ const int FINAL_GATHER_BOUND = 8;
 // 3: Motion Blur (BVH stress test)
 // 4: Mesh & Env Map
 // ==========================
-const int SCENE_ID = 2; 
+const int SCENE_ID = 5; 
 
 int main() {
     const int height = static_cast<int>(IMAGE_WIDTH / ASPECT_RATIO); 
@@ -76,7 +76,7 @@ int main() {
         );
     } else {
         std::cout << "Using Path Integrator (MIS + NEE)..." << std::endl;
-        integrator = std::make_unique<PathIntegrator>(MAX_DEPTH);
+        integrator = std::make_unique<PathIntegrator>(MAX_DEPTH, world);
     }
 
     // Render Loop

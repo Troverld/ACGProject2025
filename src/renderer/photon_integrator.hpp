@@ -45,6 +45,7 @@ public:
           K(k),
           final_gather_bound(f_gather_bound) {
             build_photon_map(scene);
+            preprocess(scene);
         }
 
     /**

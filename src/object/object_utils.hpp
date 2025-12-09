@@ -41,9 +41,7 @@ public:
      * @brief Calculates the probability density function value of a direction.
      * Used when we want to know: "What was the probability of picking direction v towards this object?"
      */
-    virtual float pdf_value(const glm::vec3& origin, const glm::vec3& v) const {
-        return 0.0f;
-    }
+    virtual float pdf_value(const glm::vec3& origin, const glm::vec3& v) const = 0;
 
     /**
      * @brief Generates a random vector starting at 'origin' towards a point on this object.
@@ -52,22 +50,32 @@ public:
      * @param origin The point from which we are viewing the object.
      * @return glm::vec3 Vector P_surface - origin.
      */
-    virtual glm::vec3 random_pointing_vector(const glm::vec3& origin) const {
-        return glm::vec3(1, 0, 0);
-    }
+    virtual glm::vec3 random_pointing_vector(const glm::vec3& origin) const = 0;
 
     /**
      * @brief Randomly sample a point and normal on the surface of object.
      * @param pos [out] Sampled point (world space)
      * @param normal [out] Geometric normal (normalized).
-     * @param pdf_area [out] pdf of area.
+     * @param area [out] Total area. Use 1/area for uniform PDF.
      */
-    virtual void sample_surface(glm::vec3& pos, glm::vec3& normal, float& pdf_area) const {
-        pdf_area = 0.0f; 
-    }
+    virtual void sample_surface(glm::vec3& pos, glm::vec3& normal, float& area) const = 0;
     
     /**
      * @brief Helper to access material pointer.
      */
     virtual Material* get_material() const = 0;
+
+    /**
+     * @brief Set the Light Index for Importance Sampling.
+     * -1 means this object is not a light source.
+     */
+    virtual void set_light_id(int id) { light_id = id; }
+    
+    /**
+     * @brief Get the Light Index.
+     */
+    int get_light_id() const { return light_id; }
+
+protected:
+    int light_id = -1; 
 };
