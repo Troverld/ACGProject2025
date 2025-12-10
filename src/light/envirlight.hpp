@@ -42,7 +42,7 @@ public:
         // and we fallback to uniform sampling.
 
         if(distribution){
-            this -> est_power = distribution->p_marginal->func_int * (4.0f * PI);
+            this -> est_power = distribution->p_marginal->func_int * (2.0f * PI * PI);
         }else{
             glm::vec3 center_radiance = tex->value(0.5f, 0.5f, glm::vec3(0.0f));
             
@@ -51,7 +51,7 @@ public:
             this->est_power = intensity * 4.0f * PI;
         }
 
-        if(this -> est_power < EPSILON) this -> est_power = EPSILON;
+        // if(this -> est_power < EPSILON) this -> est_power = EPSILON;
     }
 
     /**

@@ -23,15 +23,15 @@
 
 // --- Configuration ---
 const int MAX_DEPTH = 10;
-const int SAMPLES_PER_PIXEL = 250; // Increase for high quality
+const int SAMPLES_PER_PIXEL = 1000; // Increase for high quality
 const int IMAGE_WIDTH = 800;
 const float ASPECT_RATIO = 16.0f / 9.0f;
 
 // Photon Mapping Settings (Only used for Scene 2 usually)
 const int NUM_PHOTON = 5000000; 
-const float CAUSTIC_RADIUS = 1.0f;
+const float CAUSTIC_RADIUS = 1.5f;
 const float GLOBAL_RADIUS = 4.0f;
-const int K_NEAREST = 100;
+const int K_NEAREST = 500;
 const int FINAL_GATHER_BOUND = 8;
 
 // ==========================
@@ -40,8 +40,11 @@ const int FINAL_GATHER_BOUND = 8;
 // 2: Cornell Box (Volumetrics, Caustics, PhotonMap)
 // 3: Motion Blur (BVH stress test)
 // 4: Mesh & Env Map
+// 5: Scene 5
+// 6: Chromatic Dispersion (New)
+// 7: Prism Spectrum (New)
 // ==========================
-const int SCENE_ID = 5; 
+const int SCENE_ID = 7;
 
 int main() {
     const int height = static_cast<int>(IMAGE_WIDTH / ASPECT_RATIO); 
@@ -59,6 +62,8 @@ int main() {
         case 3: scene_motion_blur(world, cam, ASPECT_RATIO); break;
         case 4: scene_mesh_env(world, cam, ASPECT_RATIO); break;
         case 5: scene_5(world, cam, ASPECT_RATIO); break;
+        case 6: scene_dispersion(world, cam, ASPECT_RATIO); break; // Added Scene 6
+        case 7: scene_prism_spectrum(world, cam, ASPECT_RATIO); break; // Added
         default: scene_materials_textures(world, cam, ASPECT_RATIO); break;
     }
 
@@ -69,7 +74,7 @@ int main() {
     // Integrator Selection
     std::unique_ptr<Integrator> integrator;
 
-    if (SCENE_ID == 2) {
+    if (SCENE_ID == 2 || SCENE_ID ==7) {
         std::cout << "Using Photon Integrator..." << std::endl;
         integrator = std::make_unique<PhotonIntegrator>(
             MAX_DEPTH, NUM_PHOTON, CAUSTIC_RADIUS, GLOBAL_RADIUS, K_NEAREST, FINAL_GATHER_BOUND, world

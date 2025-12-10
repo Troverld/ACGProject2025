@@ -77,4 +77,26 @@ public:
     virtual bool is_specular() const {
         return false;
     }
+
+    /**
+     * @brief Check if the material allows light to pass through (Shadow Ray Transparency).
+     * Used for Dielectric / DispersiveGlass to cast colored/faint shadows.
+     * Note: Metal is specular but NOT transparent.
+     */
+    virtual bool is_transparent() const {
+        return false;
+    }
+
+    /**
+     * @brief Defines the color/intensity of light that passes through the material
+     * during a shadow ray check (Fake Caustics / Colored Shadows).
+     * 
+     * @param rec The hit record (allows texture sampling based on UV).
+     * @return glm::vec3 The attenuation factor (e.g., vec3(0.9) or vec3(1, 0, 0)).
+     */
+    virtual glm::vec3 evaluate_transmission(const HitRecord& rec) const {
+        // Default behavior for opaque objects: block all light.
+        // Although is_transparent() usually guards this call, returning 0 is a safe default.
+        return glm::vec3(0.0f);
+    }
 };

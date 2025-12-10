@@ -185,3 +185,61 @@ inline glm::vec3 uv_to_sphere(float u, float v) {
 inline float grayscale(const glm::vec3& color) {
     return 0.2126f * color.r + 0.7152f * color.g + 0.0722f * color.b;
 }
+
+
+/**
+ * @brief Approximates RGB values from a wavelength in nanometers.
+ * Based on the "Spectra" approximation (Dan Bruton).
+ * Covers the visible spectrum approx 380nm to 780nm.
+ * 
+ * @param lambda Wavelength in nanometers.
+ * @return glm::vec3 Normalized RGB color.
+ */
+inline glm::vec3 wavelength_to_rgb(float lambda) {
+    float r, g, b;
+    if (lambda >= 380.0f && lambda < 440.0f) {
+        r = -(lambda - 440.0f) / (440.0f - 380.0f);
+        g = 0.0f;
+        b = 1.0f;
+    } else if (lambda >= 440.0f && lambda < 490.0f) {
+        r = 0.0f;
+        g = (lambda - 440.0f) / (490.0f - 440.0f);
+        b = 1.0f;
+    } else if (lambda >= 490.0f && lambda < 510.0f) {
+        r = 0.0f;
+        g = 1.0f;
+        b = -(lambda - 510.0f) / (510.0f - 490.0f);
+    } else if (lambda >= 510.0f && lambda < 580.0f) {
+        r = (lambda - 510.0f) / (580.0f - 510.0f);
+        g = 1.0f;
+        b = 0.0f;
+    } else if (lambda >= 580.0f && lambda < 645.0f) {
+        r = 1.0f;
+        g = -(lambda - 645.0f) / (645.0f - 580.0f);
+        b = 0.0f;
+    } else if (lambda >= 645.0f && lambda <= 780.0f) {
+        r = 1.0f;
+        g = 0.0f;
+        b = 0.0f;
+    } else {
+        return glm::vec3(0.0f);
+    }
+
+    // Let the intensity fall off near the vision limits
+    float factor;
+    if (lambda >= 380.0f && lambda < 420.0f) {
+        factor = 0.3f + 0.7f * (lambda - 380.0f) / (420.0f - 380.0f);
+    } else if (lambda >= 420.0f && lambda < 700.0f) {
+        factor = 1.0f;
+    } else if (lambda >= 700.0f && lambda <= 780.0f) {
+        factor = 0.3f + 0.7f * (780.0f - lambda) / (780.0f - 700.0f);
+    } else {
+        factor = 0.0f;
+    }
+
+    // Gamma correct (approximate)
+    // Note: If we are working in linear space, we might not need pow(0.8),
+    // but this function is often used to map to displayable colors.
+    // Keeping it linear here for the renderer accumulator.
+    return glm::vec3(r * factor, g * factor, b * factor);
+}

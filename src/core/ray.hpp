@@ -19,9 +19,10 @@ public:
      * @param origin The starting point of the ray.
      * @param direction The direction vector of the ray (will be normalized).
      * @param time The time at which this ray exists (for motion blur).
+     * @param wavelength The wavelength in nanometers (nm). 0.0f means full spectrum (white).
      */
-    Ray(const glm::vec3& origin, const glm::vec3& direction, float time = 0.0)
-        : orig(origin), tm(time){
+    Ray(const glm::vec3& origin, const glm::vec3& direction, float time = 0.0f, float wavelength = 0.0f)
+        : orig(origin), tm(time), wavelength(wavelength){
         dir = glm::normalize(direction);
         inv_dir = 1.0f / dir; 
     }
@@ -30,6 +31,7 @@ public:
     glm::vec3 direction() const { return dir; }
     glm::vec3 inv_direction() const { return inv_dir; }
     float time() const { return tm; }
+    float get_wavelength() const { return wavelength; }
 
     /**
      * @brief Calculates the point along the ray at parameter t.
@@ -46,4 +48,5 @@ public:
     glm::vec3 dir;
     glm::vec3 inv_dir; // Cached inverse direction
     float tm;
+    float wavelength; // in nm, 0.0f means full spectrum (white)
 };

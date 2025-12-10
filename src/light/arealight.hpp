@@ -27,7 +27,7 @@ public:
         }
         glm::vec3 avg_emit = accum_emit / float(samples);
         this -> est_power = grayscale(avg_emit) * area * PI;
-        if(this -> est_power < EPSILON) this -> est_power = EPSILON;
+        // if(this -> est_power < EPSILON) this -> est_power = EPSILON;
     }
 
     virtual glm::vec3 sample_li(const glm::vec3& origin, glm::vec3& wi, float& pdf, float& distance) const override {

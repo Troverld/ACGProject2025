@@ -4,18 +4,28 @@
 # 在这里填入你想要显式包含的文件名（带后缀）。
 # 脚本会自动在项目中匹配这些文件名。
 MANUAL_WHITELIST = {
-    "arealight.hpp",
-    "envirlight.hpp",
-    "pointlight.hpp",
-    "mesh.hpp",
+    # "arealight.hpp",
+    # "envirlight.hpp",
+    # "pointlight.hpp",
+    # "mesh.hpp",
     # "moving_sphere.hpp",
-    "sphere.hpp",
-    "triangle.hpp",
+    # "sphere.hpp",
+    # "triangle.hpp",
     # "volume.hpp",
     "scene.hpp",
+    # "diffuse.hpp",
+    # "emitter.hpp",
+    # "glass.hpp",
+    # "metal.hpp",
+    # "phase_function.hpp",
+    # "camera.hpp",
     "image_texture.hpp",
     "integrator_utils.hpp",
-    "path_integrator.hpp",
+    "photon_integrator.hpp",
+    "dispersive.hpp",
+    "main.cpp",
+    "scene_list.cpp",
+    # "path_integrator.hpp",
 }
 
 

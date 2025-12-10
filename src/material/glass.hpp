@@ -52,8 +52,18 @@ public:
     }
 
     virtual bool is_emissive() const override { return false; }
-
     virtual bool is_specular() const override { return true; }
+    virtual bool is_transparent() const override { return true; }
+
+    virtual glm::vec3 evaluate_transmission(const HitRecord& rec) const override {
+        // Return the glass color.
+        // Note: Real glass reflects some light (~4%), so transmitting 100% (1.0) 
+        // might make shadows invisible.
+        // You can either:
+        // 1. Return albedo directly (user sets albedo to 0.95)
+        // 2. Return albedo * 0.96f (simulate minimal Fresnel loss at normal incidence)
+        return albedo * 0.96f; 
+    }
 
 private:
     /**

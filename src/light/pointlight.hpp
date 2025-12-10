@@ -19,7 +19,7 @@ public:
     PointLight(const glm::vec3& pos, const glm::vec3& i) 
         : position(pos), intensity(i) {
             this -> est_power = grayscale(i) * 4.0f * PI;
-            if(this -> est_power < EPSILON) this -> est_power = EPSILON;
+            // if(this -> est_power < EPSILON) this -> est_power = EPSILON;
         }
 
     virtual glm::vec3 sample_li(const glm::vec3& origin, glm::vec3& wi, float& pdf, float& distance) const override {

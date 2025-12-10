@@ -40,8 +40,11 @@ public:
         
         // Check if the object has a material and if it is emissive
         if (object->get_material() && object->get_material()->is_emissive()) {
-            object->set_light_id(static_cast<int>(lights.size()));
-            lights.push_back(std::make_shared<DiffuseAreaLight>(object));
+            auto area_light = std::make_shared<DiffuseAreaLight>(object);
+            if (area_light->power() > EPSILON) {
+                object->set_light_id(static_cast<int>(lights.size()));
+                lights.push_back(area_light);
+            }
         }
         bvh_root = nullptr; 
     }
@@ -51,7 +54,9 @@ public:
      * Use this for non-geometric lights like PointLight or DirectionalLight.
      */
     void add_light(std::shared_ptr<Light> light) {
-        lights.push_back(light);
+        if (light->power() > EPSILON) {
+            lights.push_back(light);
+        }
     }
 
     /**
@@ -93,24 +98,45 @@ public:
         return hit_anything;
     }
 
-    // /**
-    //  * @brief Find the bounding box of the scene
-    //  */
-    // virtual bool bounding_box(float time0, float time1, AABB& output_box) const override {
-    //     if (bvh_root) return bvh_root->bounding_box(time0, time1, output_box);
-    //     if (objects.empty()) return false;
+        /**
+     * @brief Calculates the transmittance (visibility) between a ray's origin and a maximum distance.
+     * Traces shadow rays. If an opaque object is hit, returns black (0).
+     * If a transparent (specular) object is hit, it continues tracing but attenuates the light.
+     * 
+     * @param r The shadow ray.
+     * @param max_distance The distance to the light source.
+     * @return glm::vec3 The fraction of light that gets through [0, 1].
+     */
+    glm::vec3 transmittance(const Ray& r, float max_distance, int max_bounce) const {
+        glm::vec3 throughput(1.0f);
+        Ray current_ray = r;
+        float remaining_dist = max_distance;
+        
+        for(int _=0; _ < max_bounce; ++_) {
+            HitRecord rec;
+            // Check intersection up to the remaining distance to the light
+            if (!intersect(current_ray, SHADOW_EPSILON, remaining_dist, rec)) return throughput;
+            // We hit something before the light.
+                
+            // If it's a transparent material (like glass), let light pass through.
+            if (rec.mat_ptr->is_transparent()) {
+                // Simple Beer's law approximation or Fresnel loss.
+                // Assume 90% throughput per surface for simplicity in this model.
+                throughput *= rec.mat_ptr->evaluate_transmission(rec);
+                if(near_zero(throughput)) return glm::vec3(0.0f);
+                
+                // Move the ray forward past the object
+                current_ray = Ray(rec.p, current_ray.direction(), current_ray.time());
+                remaining_dist -= rec.t;
+            } else {
+                // Hit an opaque object (occluder). Shadow is black.
+                return glm::vec3(0.0f);
+            }
+        }
 
-    //     AABB temp_box;
-    //     bool first_box = true;
-
-    //     for (const auto& object : objects) {
-    //         if (!object->bounding_box(time0, time1, temp_box)) return false;
-    //         output_box = first_box ? temp_box : surrounding_box(output_box, temp_box);
-    //         first_box = false;
-    //     }
-
-    //     return true;
-    // }
+        // Exceeded max shadow depth, assume blocked or negligible light
+        return glm::vec3(0.0f);
+    }
 
     /**
      * @brief Samples the background color for a ray that missed all geometry.
@@ -123,12 +149,13 @@ public:
         // --- ADDED: Texture Sampling ---
         if (env_light) return env_light->eval(r.direction());
 
-        // Default Gradient Fallback
-        glm::vec3 unit_direction = glm::normalize(r.direction());
-        // Map y from [-1, 1] to [0, 1]
-        float t = 0.5f * (unit_direction.y + 1.0f);
-        // Linear interpolation: (1-t)*White + t*Blue
-        return (1.0f - t) * glm::vec3(1.0f, 1.0f, 1.0f) + t * glm::vec3(0.5f, 0.7f, 1.0f);
+        return glm::vec3(0.0f, 0.0f, 0.0f);
+        // // Default Gradient Fallback
+        // glm::vec3 unit_direction = glm::normalize(r.direction());
+        // // Map y from [-1, 1] to [0, 1]
+        // float t = 0.5f * (unit_direction.y + 1.0f);
+        // // Linear interpolation: (1-t)*White + t*Blue
+        // return (1.0f - t) * glm::vec3(1.0f, 1.0f, 1.0f) + t * glm::vec3(0.5f, 0.7f, 1.0f);
     }
     // Stub implementation for Scene itself acting as an object
     // virtual Material* get_material() const override { return nullptr; }

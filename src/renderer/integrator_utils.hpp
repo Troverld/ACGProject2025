@@ -31,7 +31,7 @@ protected:
         for (const auto& light : scene.lights) {
             powers.push_back(light->power());
         }
-        if (scene.env_light) {
+        if (scene.env_light && scene.env_light->power() > EPSILON) {
             powers.push_back(scene.env_light->power());
         }
 
@@ -99,17 +99,19 @@ protected:
         if (light_pdf <= EPSILON || near_zero(L_emitted)) return glm::vec3(0.0f);
 
         Ray shadow_ray(rec.p, to_light, current_ray.time());
-        HitRecord shadow_rec;
         
-        if (scene.intersect(shadow_ray, SHADOW_EPSILON, dist - SHADOW_EPSILON, shadow_rec)) return glm::vec3(0.0f); // In shadow
-
         glm::vec3 f_r = rec.mat_ptr->eval(current_ray, rec, shadow_ray, srec.shading_normal);
         
         if (near_zero(f_r)) return glm::vec3(0.0f);
-
+        
         float cos_theta = glm::dot(srec.shading_normal, glm::normalize(to_light));
-
+        
         if (cos_theta <= 0.0f) return glm::vec3(0.0f);
+        
+        HitRecord shadow_rec;
+        // if (scene.intersect(shadow_ray, SHADOW_EPSILON, dist - SHADOW_EPSILON, shadow_rec)) return glm::vec3(0.0f); // In shadow
+        glm::vec3 visibility = scene.transmittance(shadow_ray, dist - SHADOW_EPSILON, 5);
+        if (near_zero(visibility)) return glm::vec3(0.0f); // In shadow
 
         // Calculate BSDF PDF for this NEE direction
         float bsdf_pdf = rec.mat_ptr->scattering_pdf(current_ray, rec, shadow_ray, srec.shading_normal);
@@ -118,7 +120,7 @@ protected:
 
         float weight = power_heuristic(total_light_pdf, bsdf_pdf);
 
-        return L_emitted * f_r * cos_theta * weight / total_light_pdf;
+        return L_emitted * f_r * cos_theta * weight * visibility / total_light_pdf;
     }
     
     /**

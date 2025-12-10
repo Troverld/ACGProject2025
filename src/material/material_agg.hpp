@@ -5,3 +5,4 @@
 #include "glass.hpp"
 #include "emitter.hpp"
 #include "phase_function.hpp"
+#include "dispersive.hpp"
