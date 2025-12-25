@@ -30,6 +30,7 @@ public:
          glm::vec3 rotate_axis = glm::vec3(0,1,0), 
          float rotate_degrees = 0.0f) 
     {
+        mat_ptr = mat;
         load_obj(filename, mat, translate, scale, rotate_axis, rotate_degrees);
     }
 
@@ -71,7 +72,7 @@ public:
     virtual glm::vec3 random_pointing_vector(const glm::vec3& origin) const override{return glm::vec3(0.0f);}
     virtual float pdf_value(const glm::vec3& origin, const glm::vec3& wi) const override {return 0.0f;}
     
-    virtual Material* get_material() const override { return nullptr; } // Material is managed by triangles
+    virtual Material* get_material() const override { return mat_ptr.get(); } // Material is managed by triangles
 
     /**
      * @brief Propagate light ID to all contained triangles.
@@ -84,6 +85,7 @@ public:
 
 private:
     std::shared_ptr<BVHNode> bvh_root;
+    std::shared_ptr<Material> mat_ptr;
     std::vector<std::shared_ptr<Object>> triangles;
     std::unique_ptr<Distribution1D> triangle_distribution;
     float sum_area = 0.0f;
