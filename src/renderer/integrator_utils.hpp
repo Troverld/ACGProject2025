@@ -73,7 +73,7 @@ protected:
      * @param time The time of the ray (for motion blur).
      * @return glm::vec3 The UNWEIGHTED direct radiance (not multiplied by path throughput yet).
      */
-    glm::vec3 sample_one_light(const Scene& scene, const HitRecord& rec, const ScatterRecord& srec, const Ray& current_ray) const {
+    glm::vec3 sample_one_light(const Scene& scene, const HitRecord& rec, const ScatterRecord& srec, const Ray& current_ray, const bool need_glass) const {
         if (!light_distribution || light_distribution->count() == 0) return glm::vec3(0.0f);
         // 1. Sample a light source based on its power
         float light_select_pdf;
@@ -109,9 +109,14 @@ protected:
         if (cos_theta <= 0.0f) return glm::vec3(0.0f);
         
         HitRecord shadow_rec;
-        // if (scene.intersect(shadow_ray, SHADOW_EPSILON, dist - SHADOW_EPSILON, shadow_rec)) return glm::vec3(0.0f); // In shadow
-        glm::vec3 visibility = scene.transmittance(shadow_ray, dist - SHADOW_EPSILON, 5);
-        if (near_zero(visibility)) return glm::vec3(0.0f); // In shadow
+        glm::vec3 visibility(1.0f);
+        if (need_glass) {
+            visibility = scene.transmittance(shadow_ray, dist - SHADOW_EPSILON, 5);
+            if (near_zero(visibility)) return glm::vec3(0.0f); // In shadow
+        } else {
+            if (scene.intersect(shadow_ray, SHADOW_EPSILON, dist - SHADOW_EPSILON, shadow_rec))
+                return glm::vec3(0.0f); // In shadow
+        }
 
         // Calculate BSDF PDF for this NEE direction
         float bsdf_pdf = rec.mat_ptr->scattering_pdf(current_ray, rec, shadow_ray, srec.shading_normal);

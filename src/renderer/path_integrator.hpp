@@ -39,7 +39,7 @@ public:
 
             // 4. Direct Lighting via NEE (if not specular)
             if (!srec.is_specular) {
-                glm::vec3 e = throughput * sample_one_light(scene, rec, srec, current_ray);
+                glm::vec3 e = throughput * sample_one_light(scene, rec, srec, current_ray, true); // need lights pass through glass
                 clamp_radiance(e);
                 L += e;
             }
