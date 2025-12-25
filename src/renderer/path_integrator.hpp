@@ -21,7 +21,9 @@ public:
             
             // 1. Intersection
             if (!scene.intersect(current_ray, SHADOW_EPSILON, Infinity, rec)) {
-                L += throughput * eval_environment(scene, current_ray, last_bsdf_pdf, last_bounce_specular);
+                glm::vec3 env_L = throughput * eval_environment(scene, current_ray, last_bsdf_pdf, last_bounce_specular);
+                if (bounce > 0) clamp_radiance(env_L);
+                L += env_L;
                 break;
             }
 

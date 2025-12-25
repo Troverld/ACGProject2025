@@ -78,10 +78,9 @@ public:
         for (int i = 0; i < num_lights; ++i) {
             sum_local_pdf += light_distribution->pdf_discrete(i);
         }
-
         if (sum_local_pdf <= EPSILON) {
-             std::cout << "[PhotonIntegrator] Only Environment Light detected. Photon map skipped.\n";
-             return;
+            std::cout << "[PhotonIntegrator] Only Environment Light detected. Photon map skipped." << std::endl;
+            return;
         }
 
         int global_budget = num_photons_global; 
@@ -184,7 +183,9 @@ public:
             if (!scene.intersect(current_ray, SHADOW_EPSILON, Infinity, rec)) {
                 // Environment light is NOT in the photon map.
                 // Always evaluate it, regardless of in_caustic_path state.
-                L += throughput * eval_environment(scene, current_ray, last_bsdf_pdf, last_bounce_specular);
+                glm::vec3 env_L = throughput * eval_environment(scene, current_ray, last_bsdf_pdf, last_bounce_specular);
+                if (bounce > 0) clamp_radiance(env_L);
+                L += env_L;
                 break;
             }
 

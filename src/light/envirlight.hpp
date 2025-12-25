@@ -79,7 +79,7 @@ public:
             
             // PDF conversion: Area Measure (UV) -> Solid Angle Measure
             // pdf_solid = pdf_uv / (2 * PI^2 * sin(theta))
-            if (sin_theta == 0) pdf = 0;
+            if (sin_theta < EPSILON) pdf = 0.0f;
             else pdf = map_pdf / (2.0f * PI * PI * sin_theta);
 
             distance = Infinity;
@@ -113,7 +113,7 @@ public:
             float theta = v * PI;
             float sin_theta = std::sin(theta);
             
-            if (sin_theta <= EPSILON) return 0.0f;
+            if (sin_theta < EPSILON) return 0.0f;
             return map_pdf / (2.0f * PI * PI * sin_theta);
         }
         return 1.0f / (4.0f * PI);
