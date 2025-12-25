@@ -73,7 +73,7 @@ protected:
      * @param time The time of the ray (for motion blur).
      * @return glm::vec3 The UNWEIGHTED direct radiance (not multiplied by path throughput yet).
      */
-    glm::vec3 sample_one_light(const Scene& scene, const HitRecord& rec, const ScatterRecord& srec, const Ray& current_ray, const bool ignore_local_lights) const {
+    glm::vec3 sample_one_light(const Scene& scene, const HitRecord& rec, const ScatterRecord& srec, const Ray& current_ray, const bool local_light_caustic) const {
         if (!light_distribution || light_distribution->count() == 0) return glm::vec3(0.0f);
         // 1. Sample a light source based on its power
         float light_select_pdf;
@@ -82,17 +82,14 @@ protected:
 
         const Light* light;
         size_t n_scene_lights = scene.lights.size();
+        bool caustic = local_light_caustic;
 
         // Determine which light was picked (Scene Lights vs Env Light)
         if (light_idx < static_cast<int>(n_scene_lights)) {
             light = scene.lights[light_idx].get();
         } else {
             light = scene.env_light.get();
-        }
-
-        if (ignore_local_lights) {
-            light = scene.env_light.get();
-            light_select_pdf = 1.0f;
+            caustic = true;
         }
 
         glm::vec3 to_light;
@@ -115,7 +112,7 @@ protected:
         
         HitRecord shadow_rec;
         glm::vec3 visibility(1.0f);
-        visibility = scene.transmittance(shadow_ray, dist - SHADOW_EPSILON, 5);
+        visibility = scene.transmittance(shadow_ray, dist - SHADOW_EPSILON, 5, caustic);
         if (near_zero(visibility)) return glm::vec3(0.0f); // In shadow
 
         // Calculate BSDF PDF for this NEE direction

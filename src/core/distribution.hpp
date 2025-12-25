@@ -16,13 +16,14 @@ struct Distribution1D {
     Distribution1D(const float* f, int n) : func(f, f + n), cdf(n + 1) {
         cdf[0] = 0;
         for (int i = 0; i < n; ++i) {
-            cdf[i + 1] = cdf[i] + func[i] / n;
+            cdf[i + 1] = cdf[i] + func[i];
         }
-        func_int = cdf[n];
+        float total_sum = cdf[n];
+        func_int = total_sum / float(n);
         if (func_int == 0) {
             for (int i = 1; i < n + 1; ++i) cdf[i] = float(i) / float(n);
         } else {
-            for (int i = 1; i < n + 1; ++i) cdf[i] /= func_int;
+            for (int i = 1; i < n + 1; ++i) cdf[i] /= total_sum;
         }
     }
 
@@ -39,6 +40,7 @@ struct Distribution1D {
      */
     float sample_continuous(float u, float& pdf, int& off) const {
         // Find surrounding CDF segments using binary search
+        u = std::clamp(u, 0.0f, cdf.back() - 2e-7f);
         auto ptr = std::upper_bound(cdf.begin(), cdf.end(), u);
         int offset = std::max(0, int(ptr - cdf.begin() - 1));
         off = offset;
@@ -48,7 +50,7 @@ struct Distribution1D {
         if ((cdf[offset + 1] - cdf[offset]) > 0) {
             du /= (cdf[offset + 1] - cdf[offset]);
         }
-        pdf = func[offset] / (func_int > 0 ? func_int : 1.0f);
+        pdf = func_int > 0 ? func[offset] / func_int : 1.0f;
         return (offset + du) / count();
     }
     
@@ -56,6 +58,7 @@ struct Distribution1D {
      * @brief Sample discrete index.
      */
     int sample_discrete(float u, float& pdf, float& remapped_u) const {
+        u = std::clamp(u, 0.0f, cdf.back() - 2e-7f);
         auto ptr = std::upper_bound(cdf.begin(), cdf.end(), u);
         int offset = std::max(0, int(ptr - cdf.begin() - 1));
         pdf = (func_int > 0) ? func[offset] / (func_int * count()) : 1.0f / count();

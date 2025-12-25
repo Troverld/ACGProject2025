@@ -117,7 +117,8 @@ public:
                 int n_caustic = caustic_counts[i];
 
                 for (int k = 0; k < n_global; ++k) {
-                    float time = shutter_open + random_float() * (shutter_close - shutter_open);
+                    // float time = shutter_open + random_float() * (shutter_close - shutter_open);
+                    float time = 0.0f;
                     glm::vec3 pos, dir, power;
                     light->emit(pos, dir, power, static_cast<float>(n_global)); 
 
@@ -132,7 +133,8 @@ public:
                     for (const auto& target : targets) {
                         for (int k = 0; k < per_target; ++k) {
                             glm::vec3 pos, dir, power;
-                            float time = shutter_open + random_float() * (shutter_close - shutter_open);
+                            // float time = shutter_open + random_float() * (shutter_close - shutter_open);
+                            float time = 0.0f;
                             if (light->emit_targeted(pos, dir, power, (float)per_target, *target)
                                 && glm::length(power) > 0.0f) {
                                     Ray photon_ray(pos + dir * SHADOW_EPSILON, dir, time); 
@@ -265,7 +267,7 @@ public:
                     // We collect all incoming energy here.
 
                     // 1. Direct Light (NEE) - Handles L -> D
-                    glm::vec3 L_direct = sample_one_light(scene, rec, srec, current_ray, true); // ignore normal light, use env light only
+                    glm::vec3 L_direct = sample_one_light(scene, rec, srec, current_ray, false); // ignore normal light caustic
                     clamp_radiance(L_direct);
                     L += throughput * L_direct;
 

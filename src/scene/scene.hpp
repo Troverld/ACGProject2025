@@ -107,7 +107,7 @@ public:
      * @param max_distance The distance to the light source.
      * @return glm::vec3 The fraction of light that gets through [0, 1].
      */
-    glm::vec3 transmittance(const Ray& r, float max_distance, int max_bounce) const {
+    glm::vec3 transmittance(const Ray& r, float max_distance, int max_bounce, bool include_refraction) const {
         glm::vec3 throughput(1.0f);
         Ray current_ray = r;
         float remaining_dist = max_distance;
@@ -119,7 +119,7 @@ public:
             // We hit something before the light.
                 
             // If it's a transparent material (like glass), let light pass through.
-            if (rec.mat_ptr->is_transparent()) {
+            if (include_refraction && rec.mat_ptr->is_transparent()) {
                 // Simple Beer's law approximation or Fresnel loss.
                 // Assume 90% throughput per surface for simplicity in this model.
                 throughput *= rec.mat_ptr->evaluate_transmission(rec);
