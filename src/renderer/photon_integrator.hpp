@@ -36,16 +36,22 @@ public:
      * @param caustic_r Radius to search for caustic photons.
      * @param global_r Radius to search for global indirect photons.
      * @param f_gather_bound Depth at which to switch from PT recursion to Global Map lookup.
+     * @param t0 Shutter open time.
+     * @param t1 Shutter close time.
+     * @param scene The scene reference.
      */
     PhotonIntegrator(int max_d, int n_photons,
                      float caustic_r, float global_r, int k,
-                     int f_gather_bound, const Scene& scene) 
+                     int f_gather_bound,
+                     float t0, float t1,
+                     const Scene& scene)
         : max_depth(max_d), num_photons_global(n_photons), 
           gather_radius_caustic(caustic_r), gather_radius_global(global_r), 
           K(k),
-          final_gather_bound(f_gather_bound) {
-            build_photon_map(scene);
+          final_gather_bound(f_gather_bound),
+          shutter_open(t0), shutter_close(t1) {
             preprocess(scene);
+            build_photon_map(scene);
         }
 
     /**
@@ -56,20 +62,43 @@ public:
             std::cout << "[PhotonIntegrator] Warning: No lights in scene. Photon map will be empty.\n";
             return;
         }
+        
+        if (!light_distribution || light_distribution->count() == 0) {
+            std::cout << "[PhotonIntegrator] No light distribution found. Skipping.\n";
+            return;
+        }
 
         std::cout << "[PhotonIntegrator] Emitting " << num_photons_global << " photons..." << std::endl;
 
         int num_lights = static_cast<int>(scene.lights.size());
-        int photons_per_light = num_photons_global / num_lights;
-        int caustic_photons_per_target = 0;
+        std::vector<int> global_counts(num_lights, 0);
+        std::vector<int> caustic_counts(num_lights, 0);
+
+        float sum_local_pdf = 0.0f;
+        for (int i = 0; i < num_lights; ++i) {
+            sum_local_pdf += light_distribution->pdf_discrete(i);
+        }
+
+        if (sum_local_pdf <= EPSILON) {
+             std::cout << "[PhotonIntegrator] Only Environment Light detected. Photon map skipped.\n";
+             return;
+        }
+
+        int global_budget = num_photons_global; 
+        int caustic_budget = num_photons_global / 2;
 
         std::vector<const Object*> targets = find_specular_targets(scene);
-        if (targets.empty()) {
-            std::cout << "No specular targets found for guided emission." << std::endl;
-        } else {
-            photons_per_light = (num_photons_global / 2) / num_lights;
-            // photons_per_light = 0;
-            caustic_photons_per_target = (num_photons_global / 2) / (int)(targets.size() * num_lights);
+        bool has_targets = !targets.empty();
+
+        for (int i = 0; i < num_lights; ++i) {
+            float pdf = light_distribution->pdf_discrete(i);
+            float relative_prob = pdf / sum_local_pdf;
+
+            global_counts[i] = static_cast<int>(global_budget * relative_prob);
+            
+            if (has_targets && global_counts[i] > 0) {
+                caustic_counts[i] = static_cast<int>(caustic_budget * relative_prob);
+            }
         }
 
         // Thread-safe temporary storage
@@ -85,25 +114,32 @@ public:
             #pragma omp for schedule(dynamic)
             for (int i = 0; i < num_lights; ++i) {
                 const auto& light = scene.lights[i];
+                int n_global = global_counts[i];
+                int n_caustic = caustic_counts[i];
 
-                for (int k = 0; k < photons_per_light; ++k) {
+                for (int k = 0; k < n_global; ++k) {
+                    float time = shutter_open + random_float() * (shutter_close - shutter_open);
                     glm::vec3 pos, dir, power;
-                    light->emit(pos, dir, power, static_cast<float>(photons_per_light)); 
+                    light->emit(pos, dir, power, static_cast<float>(n_global)); 
 
                     if (glm::length(power) > 0.0f) {
-                        Ray photon_ray(pos + dir * SHADOW_EPSILON, dir); 
+                        Ray photon_ray(pos + dir * SHADOW_EPSILON, dir, time); 
                         trace_photon(scene, photon_ray, power, local_caustic, local_global);
                     }
                 }
 
-                for (const auto& target : targets) {
-                    for (int k = 0; k < caustic_photons_per_target; ++k) {
-                        glm::vec3 pos, dir, power;
-                        if (light->emit_targeted(pos, dir, power, (float)caustic_photons_per_target, *target)
-                            && glm::length(power) > 0.0f) {
-                                Ray photon_ray(pos + dir * SHADOW_EPSILON, dir); 
-                                trace_photon(scene, photon_ray, power, local_caustic, local_global);
-                            }
+                if (has_targets && n_caustic > 0) {
+                    int per_target = n_caustic / static_cast<int>(targets.size());
+                    for (const auto& target : targets) {
+                        for (int k = 0; k < per_target; ++k) {
+                            glm::vec3 pos, dir, power;
+                            float time = shutter_open + random_float() * (shutter_close - shutter_open);
+                            if (light->emit_targeted(pos, dir, power, (float)per_target, *target)
+                                && glm::length(power) > 0.0f) {
+                                    Ray photon_ray(pos + dir * SHADOW_EPSILON, dir, time); 
+                                    trace_photon(scene, photon_ray, power, local_caustic, local_global);
+                                }
+                        }
                     }
                 }
             }
@@ -228,7 +264,7 @@ public:
                     // We collect all incoming energy here.
 
                     // 1. Direct Light (NEE) - Handles L -> D
-                    glm::vec3 L_direct = sample_one_light(scene, rec, srec, current_ray);
+                    glm::vec3 L_direct = sample_one_light(scene, rec, srec, current_ray, false); // do not need glass
                     clamp_radiance(L_direct);
                     L += throughput * L_direct;
 
@@ -279,7 +315,8 @@ private:
     int final_gather_bound;
     int num_photons_global;
     int K;
-    float time0;
+    float shutter_open;
+    float shutter_close;
     float gather_radius_global;
     float gather_radius_caustic;
     PhotonMap global_map;
