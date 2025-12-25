@@ -4,6 +4,8 @@
 #include <memory>
 #include <algorithm>
 #include <omp.h>
+#include <iomanip>
+#include <sstream>
 
 // External
 #include <glm/glm.hpp>
@@ -24,6 +26,7 @@
 // --- Configuration ---
 const int MAX_DEPTH = 10;
 const int SAMPLES_PER_PIXEL = 1000; // Increase for high quality
+const int SAMPLES_PER_BATCH = SAMPLES_PER_PIXEL / 5; // How often to save an image
 const int IMAGE_WIDTH = 800;
 const float ASPECT_RATIO = 16.0f / 9.0f;
 
@@ -44,18 +47,50 @@ const int FINAL_GATHER_BOUND = 8;
 // 6: Chromatic Dispersion (New)
 // 7: Prism Spectrum (New)
 // ==========================
-const int SCENE_ID = 7;
+const int SCENE_ID = 2; 
+
+void save_snapshot(int current_samples, int width, int height, const std::vector<glm::vec3>& accum_buffer) {
+    std::vector<unsigned char> image_output(width * height * 3);
+    
+    // We don't parallelize this part usually because I/O is the bottleneck, 
+    // but conversion can be parallelized.
+    #pragma omp parallel for schedule(dynamic)
+    for (int j = 0; j < height; ++j) {
+        for (int i = 0; i < width; ++i) {
+            int index = j * width + i;
+            
+            // Average the accumulated color
+            glm::vec3 color = accum_buffer[index] / float(current_samples);
+
+            // Gamma Correction (Gamma 2.0 approximation)
+            color = glm::sqrt(color);
+
+            // Clamp and convert
+            int out_idx = index * 3;
+            image_output[out_idx + 0] = static_cast<unsigned char>(255.999f * std::clamp(color.r, 0.0f, 1.0f));
+            image_output[out_idx + 1] = static_cast<unsigned char>(255.999f * std::clamp(color.g, 0.0f, 1.0f));
+            image_output[out_idx + 2] = static_cast<unsigned char>(255.999f * std::clamp(color.b, 0.0f, 1.0f));
+        }
+    }
+
+    // Generate filename with zero padding: output_scene_2_samples_0050.png
+    std::stringstream ss;
+    ss << "output_scene_" << SCENE_ID << "_samples_" << std::setw(4) << std::setfill('0') << current_samples << ".png";
+    std::string filename = ss.str();
+
+    stbi_write_png(filename.c_str(), width, height, 3, image_output.data(), width * 3);
+    std::cout << "Saved snapshot: " << filename << std::flush; // Flush to ensure text appears immediately
+}
 
 int main() {
     const int height = static_cast<int>(IMAGE_WIDTH / ASPECT_RATIO); 
-    const int channels = 3;
     
     std::cout << "Rendering Scene ID: " << SCENE_ID << " [" << IMAGE_WIDTH << "x" << height << "]" << std::endl;
+    std::cout << "Target Samples: " << SAMPLES_PER_PIXEL << " (Batch Size: " << SAMPLES_PER_BATCH << ")" << std::endl;
 
     Scene world;
     Camera cam(glm::vec3(0), glm::vec3(0,0,-1), glm::vec3(0,1,0), 90, ASPECT_RATIO); 
 
-    // Scene Setup Switch
     switch (SCENE_ID) {
         case 1: scene_materials_textures(world, cam, ASPECT_RATIO); break;
         case 2: scene_cornell_smoke_caustics(world, cam, ASPECT_RATIO); break;
@@ -67,11 +102,8 @@ int main() {
         default: scene_materials_textures(world, cam, ASPECT_RATIO); break;
     }
 
-    // Build Acceleration Structure
-    // Note: Motion blur scene requires time range [0, 1]
     world.build_bvh(0.0f, 1.0f); 
 
-    // Integrator Selection
     std::unique_ptr<Integrator> integrator;
 
     if (SCENE_ID == 2 || SCENE_ID ==7) {
@@ -84,40 +116,55 @@ int main() {
         integrator = std::make_unique<PathIntegrator>(MAX_DEPTH, world);
     }
 
-    // Render Loop
-    std::vector<unsigned char> image(IMAGE_WIDTH * height * channels);
+    // --- ACCUMULATION BUFFER ---
+    // Stores high precision sum of all samples
+    std::vector<glm::vec3> accumulation_buffer(IMAGE_WIDTH * height, glm::vec3(0.0f));
 
-    #pragma omp parallel for schedule(dynamic)
-    for (int j = 0; j < height; ++j) {
-        if (j % 10 == 0) 
-            printf("Scanning line %d / %d \r", j, height);
+    int samples_so_far = 0;
 
-        for (int i = 0; i < IMAGE_WIDTH; ++i) {
-            glm::vec3 pixel_color(0.0f, 0.0f, 0.0f);
+    // --- RENDER LOOP (Batched) ---
+    while (samples_so_far < SAMPLES_PER_PIXEL) {
+        
+        // Determine samples for this batch (handle remainder)
+        int current_batch_size = std::min(SAMPLES_PER_BATCH, SAMPLES_PER_PIXEL - samples_so_far);
+        
+        std::cout << "\nRendering Batch: samples " << samples_so_far + 1 
+                  << " to " << samples_so_far + current_batch_size << "..." << std::endl;
 
-            for (int s = 0; s < SAMPLES_PER_PIXEL; ++s) {
-                float u = (float(i) + random_float()) / IMAGE_WIDTH;
-                float v = (float(height - 1 - j) + random_float()) / height;
-
-                Ray r = cam.get_ray(u, v);
-                pixel_color += integrator->estimate_radiance(r, world);
-            }
+        // Parallelize pixel loops
+        #pragma omp parallel for schedule(dynamic)
+        for (int j = 0; j < height; ++j) {
             
-            pixel_color /= float(SAMPLES_PER_PIXEL);
+            // Only print progress for one thread to avoid clutter
+            if (omp_get_thread_num() == 0 && j % 20 == 0) {
+                 // Simple spinner or progress indicator
+            }
 
-            // Gamma Correction
-            pixel_color = glm::sqrt(pixel_color);
+            for (int i = 0; i < IMAGE_WIDTH; ++i) {
+                glm::vec3 batch_color(0.0f);
 
-            int index = (j * IMAGE_WIDTH + i) * channels;
-            image[index + 0] = static_cast<unsigned char>(255.999f * std::clamp(pixel_color.r, 0.0f, 1.0f));
-            image[index + 1] = static_cast<unsigned char>(255.999f * std::clamp(pixel_color.g, 0.0f, 1.0f));
-            image[index + 2] = static_cast<unsigned char>(255.999f * std::clamp(pixel_color.b, 0.0f, 1.0f));
+                // Run the samples for this batch
+                for (int s = 0; s < current_batch_size; ++s) {
+                    float u = (float(i) + random_float()) / IMAGE_WIDTH;
+                    float v = (float(height - 1 - j) + random_float()) / height;
+
+                    Ray r = cam.get_ray(u, v);
+                    batch_color += integrator->estimate_radiance(r, world);
+                }
+
+                // Add batch result to accumulation buffer
+                // Note: No race condition here because each thread owns specific (i, j)
+                int index = j * IMAGE_WIDTH + i;
+                accumulation_buffer[index] += batch_color;
+            }
         }
+
+        samples_so_far += current_batch_size;
+
+        // Save image after every batch
+        save_snapshot(samples_so_far, IMAGE_WIDTH, height, accumulation_buffer);
     }
 
-    std::string filename = "output_scene_" + std::to_string(SCENE_ID) + ".png";
-    stbi_write_png(filename.c_str(), IMAGE_WIDTH, height, channels, image.data(), IMAGE_WIDTH * channels);
-    std::cout << "\nDone! Saved to " << filename << std::endl;
-
+    std::cout << "\n\nRendering Complete!" << std::endl;
     return 0;
 }

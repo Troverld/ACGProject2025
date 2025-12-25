@@ -26,6 +26,8 @@ struct Distribution1D {
         }
     }
 
+    Distribution1D(const float* f, size_t n) : Distribution1D(f, static_cast<int>(n)) {}
+
     int count() const { return static_cast<int>(func.size()); }
 
     /**
