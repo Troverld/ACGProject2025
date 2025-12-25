@@ -26,16 +26,16 @@
 // --- Configuration ---
 const int MAX_DEPTH = 10;
 const int SAMPLES_PER_PIXEL = 1000; // Increase for high quality
-const int SAMPLES_PER_BATCH = SAMPLES_PER_PIXEL / 5; // How often to save an image
+const int SAMPLES_PER_BATCH = 100; // How often to save an image
 const int IMAGE_WIDTH = 800;
 const float ASPECT_RATIO = 16.0f / 9.0f;
 
 // Photon Mapping Settings (Only used for Scene 2 usually)
-const int NUM_PHOTON = 5000000; 
-const float CAUSTIC_RADIUS = 1.5f;
-const float GLOBAL_RADIUS = 4.0f;
-const int K_NEAREST = 500;
-const int FINAL_GATHER_BOUND = 8;
+const int NUM_PHOTON = 100000000; 
+const float CAUSTIC_RADIUS = 0.3f;
+const float GLOBAL_RADIUS = 0.4f;
+const int K_NEAREST = 100;
+const int FINAL_GATHER_BOUND = 4;
 
 // ==========================
 // SCENE SELECTION
@@ -47,7 +47,7 @@ const int FINAL_GATHER_BOUND = 8;
 // 6: Chromatic Dispersion (New)
 // 7: Prism Spectrum (New)
 // ==========================
-const int SCENE_ID = 2; 
+const int SCENE_ID = 7; 
 
 void save_snapshot(int current_samples, int width, int height, const std::vector<glm::vec3>& accum_buffer) {
     std::vector<unsigned char> image_output(width * height * 3);
@@ -109,7 +109,7 @@ int main() {
     if (SCENE_ID == 2 || SCENE_ID ==7) {
         std::cout << "Using Photon Integrator..." << std::endl;
         integrator = std::make_unique<PhotonIntegrator>(
-            MAX_DEPTH, NUM_PHOTON, CAUSTIC_RADIUS, GLOBAL_RADIUS, K_NEAREST, FINAL_GATHER_BOUND, world
+            MAX_DEPTH, NUM_PHOTON, CAUSTIC_RADIUS, GLOBAL_RADIUS, K_NEAREST, FINAL_GATHER_BOUND, 0.0f, 1.0f, world
         );
     } else {
         std::cout << "Using Path Integrator (MIS + NEE)..." << std::endl;

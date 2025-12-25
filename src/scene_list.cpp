@@ -325,8 +325,8 @@ void scene_prism_spectrum(Scene& world, Camera& cam, float aspect) {
     // We make it matte white to catch the rainbow clearly.
     auto mat_screen = std::make_shared<Lambertian>(glm::vec3(0.8f));
     // A long floor stretching along X to catch the refracted beam
-    world.add(std::make_shared<Triangle>(glm::vec3(-20,0,-10), glm::vec3(20,0,-10), glm::vec3(20,0,10), mat_screen)); 
-    world.add(std::make_shared<Triangle>(glm::vec3(-20,0,-10), glm::vec3(20,0,10), glm::vec3(-20,0,10), mat_screen));
+    world.add(std::make_shared<Triangle>(glm::vec3(-20,-0.5f,-10), glm::vec3(20,-0.5f,-10), glm::vec3(20,-0.5f,10), mat_screen)); 
+    world.add(std::make_shared<Triangle>(glm::vec3(-20,-0.5f,-10), glm::vec3(20,-0.5f,10), glm::vec3(-20,-0.5f,10), mat_screen));
 
     // 3. The Prism Material
     // High dispersion parameters to exaggerate the rainbow spread over a short distance.
@@ -355,7 +355,7 @@ void scene_prism_spectrum(Scene& world, Camera& cam, float aspect) {
     // Back Face
     world.add(std::make_shared<Triangle>(p3, p5, p4, mat_prism));
     // Bottom Face (Rect: p0-p1-p4-p3)
-    world.add(std::make_shared<Triangle>(p0, p3, p4, mat_prism));
+    world.add(std::make_shared<Triangle>(p0, p4, p3, mat_prism));
     world.add(std::make_shared<Triangle>(p0, p1, p4, mat_prism));
     // Left Face (Rect: p0-p2-p5-p3)
     world.add(std::make_shared<Triangle>(p0, p2, p5, mat_prism));
@@ -367,12 +367,12 @@ void scene_prism_spectrum(Scene& world, Camera& cam, float aspect) {
     // 5. The Light Source (The "Beam")
     // We position a bright, small sphere high up and to the left.
     // It acts like a spotlight directed at the prism.
-    auto light_intensity = glm::vec3(5000.0f); // Very bright to compensate for distance
+    auto light_intensity = glm::vec3(1000.0f); // Very bright to compensate for distance
     auto mat_light = std::make_shared<DiffuseLight>(light_intensity);
     
     // Position: Left (-X), Up (+Y).
     // The angle is crucial. We want roughly 45-60 degrees incidence to maximize dispersion width.
-    world.add(std::make_shared<Sphere>(glm::vec3(-8.0f, 2.0f, 0.0f), 0.2f, mat_light));
+    world.add(std::make_shared<Sphere>(glm::vec3(-8.0f, 2.0f, -0.1f), 0.2f, mat_light));
 
     // 6. Camera
     // Look from the side to see both the prism and the projected spectrum on the floor.
