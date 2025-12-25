@@ -264,7 +264,7 @@ public:
                     // We collect all incoming energy here.
 
                     // 1. Direct Light (NEE) - Handles L -> D
-                    glm::vec3 L_direct = sample_one_light(scene, rec, srec, current_ray, false); // do not need glass
+                    glm::vec3 L_direct = sample_one_light(scene, rec, srec, current_ray, true); // ignore normal light, use env light only
                     clamp_radiance(L_direct);
                     L += throughput * L_direct;
 
