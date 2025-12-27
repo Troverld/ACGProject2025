@@ -319,11 +319,15 @@ void scene_prism_spectrum(Scene& world, Camera& cam, float aspect) {
     world.clear();
 
     // 1. Dark Room (No ambient light)
-    world.set_background(std::make_shared<SolidColor>(0.0f, 0.0f, 0.0f));
+    world.set_background(std::make_shared<ImageTexture>("assets/envir/NightSkyHDRI008_1K_HDR.hdr"));
 
     // 2. The Projection Screen (The Floor/Table)
     // We make it matte white to catch the rainbow clearly.
-    auto mat_screen = std::make_shared<Lambertian>(glm::vec3(0.8f));
+    // auto mat_screen = std::make_shared<Lambertian>(glm::vec3(0.8f));
+
+    auto diff_tex = std::make_shared<ImageTexture>("assets/texture/painted_wood/PaintedWood007C_1K-PNG_Color.png");
+    auto norm_tex = std::make_shared<ImageTexture>("assets/texture/painted_wood/PaintedWood007C_1K-PNG_NormalGL.png");
+    auto mat_screen = std::make_shared<Lambertian>(diff_tex, norm_tex);
     // A long floor stretching along X to catch the refracted beam
     world.add(std::make_shared<Triangle>(glm::vec3(-20,-0.5f,-10), glm::vec3(20,-0.5f,-10), glm::vec3(20,-0.5f,10), mat_screen)); 
     world.add(std::make_shared<Triangle>(glm::vec3(-20,-0.5f,-10), glm::vec3(20,-0.5f,10), glm::vec3(-20,-0.5f,10), mat_screen));
@@ -374,10 +378,88 @@ void scene_prism_spectrum(Scene& world, Camera& cam, float aspect) {
     // The angle is crucial. We want roughly 45-60 degrees incidence to maximize dispersion width.
     world.add(std::make_shared<Sphere>(glm::vec3(-8.0f, 2.0f, -0.1f), 0.2f, mat_light));
 
+    auto newton_mesh = std::make_shared<Mesh>(
+        "assets/model/newton/newton.obj",  // 确保路径正确
+        // mat_plaster,                // 暂时忽略纹理，强制使用白模，专注于几何体测试
+        nullptr,
+        glm::vec3(3.0f, 1.0f, -2.5f),// Position (底座中心置于原点)
+        3.0f,                // Scale
+        glm::vec3(0, 1, 0),         // Rotation Axis (绕 Y 轴)
+        0.0f                        // Rotation Angle (根据朝向调整，例如 180.0f)
+    );
+    world.add(newton_mesh);
+
     // 6. Camera
     // Look from the side to see both the prism and the projected spectrum on the floor.
-    glm::vec3 lookfrom(0.0f, 4.0f, 8.0f);
-    glm::vec3 lookat(2.0f, 0.0f, 0.0f); // Look at the area where rainbow lands
+    glm::vec3 lookfrom(0.0f, 3.0f, 8.0f);
+    glm::vec3 lookat(2.0f, 0.3f, 0.0f); // Look at the area where rainbow lands
     
+    cam = Camera(lookfrom, lookat, glm::vec3(0,1,0), 30.0f, aspect, 0.0f, 10.0f);
+}
+
+
+// =======================================================================
+// Scene 8: Newton Bust Import Test
+// 验证功能:
+// 1. OBJ Import Integrity (Newton bust)
+// 2. BVH Build Efficiency (Complex geometry check)
+// 3. Scale & Orientation Verification
+// =======================================================================
+void scene_newton_test(Scene& world, Camera& cam, float aspect) {
+    world.clear();
+
+    // 1. Setup Materials
+    // 使用纯白 Lambertian 材质模拟石膏像，这最能检验光照计算和法线插值是否正确
+    auto mat_plaster = std::make_shared<Lambertian>(glm::vec3(0.85f, 0.85f, 0.85f));
+    auto mat_floor   = std::make_shared<Lambertian>(glm::vec3(0.2f, 0.2f, 0.2f)); // 深灰地板
+    auto mat_light   = std::make_shared<DiffuseLight>(glm::vec3(15.0f)); // 强光
+    auto mat_gold = std::make_shared<Metal>(glm::vec3(1.0f, 0.84f, 0.0f), 0.1f);
+
+    // 2. Environment
+    // 使用暗色背景，模拟摄影棚环境，避免环境光干扰对模型的观察
+    world.set_background(std::make_shared<SolidColor>(0.05f, 0.05f, 0.05f)); 
+
+    // Floor (防止模型悬空，并接收投影)
+    // 地板放在 Y = 0 下方一点点，假设模型底座在 Y=0
+    // world.add(std::make_shared<Sphere>(glm::vec3(0.0f,-1000.0f,0.0f), 1000.0f, mat_floor));
+    world.add(std::make_shared<Triangle>(glm::vec3(-20,0.0f,-10), glm::vec3(20,0.0f,-10), glm::vec3(20,0.0f,10), mat_floor)); 
+    world.add(std::make_shared<Triangle>(glm::vec3(-20,0.0f,-10), glm::vec3(20,0.0f,10), glm::vec3(-20,0.0f,10), mat_floor));
+
+    // 3. The Newton Model
+    // 关键调试点：Scale (缩放)
+    // Three.js 导出的 OBJ 通常单位比较统一，但取决于原始扫描数据的单位（米/厘米/毫米）。
+    // 策略：先假设单位是 "米" (Scale = 1.0)。
+    // 如果渲染出来是全黑：
+    //   a. 模型太小 -> 改为 10.0f 或 100.0f
+    //   b. 模型太大(相机在肚子里) -> 改为 0.1f 或 0.01f
+    float model_scale = 1.0f; 
+    
+    // 关键调试点：Rotation (旋转)
+    // 很多扫描模型默认是 Y-up，但也有些是 Z-up 导致躺在地上。
+    // 如果模型躺着，尝试绕 X 轴旋转 -90 或 90 度。
+    auto newton_mesh = std::make_shared<Mesh>(
+        "assets/model/newton/newton.obj",  // 确保路径正确
+        // mat_plaster,                // 暂时忽略纹理，强制使用白模，专注于几何体测试
+        nullptr,
+        glm::vec3(0.0f, 1.0f, 0.0f),// Position (底座中心置于原点)
+        model_scale,                // Scale
+        glm::vec3(0, 1, 0),         // Rotation Axis (绕 Y 轴)
+        0.0f                        // Rotation Angle (根据朝向调整，例如 180.0f)
+    );
+    world.add(newton_mesh);
+    world.add(std::make_shared<Sphere>(glm::vec3(-3.0f, 1.0f, 0.0f), 1.0f, mat_gold));
+
+    // 4. Lighting
+    // 经典的“伦勃朗光”位：右上方 45 度打光，能很好地表现面部体积感
+    world.add(std::make_shared<Sphere>(glm::vec3(5.0f, 6.0f, 5.0f), 1.5f, mat_light));
+
+    // 5. Camera
+    // 根据 Three.js 的截图，这是一个半身像。
+    // 假设模型高度约 1.0 - 2.0 单位。
+    // 摄像机位置：稍微俯视，保持一定距离。
+    glm::vec3 lookfrom(0.0f, 3.5f, 6.0f); 
+    glm::vec3 lookat(0.0f, 1.2f, 0.0f);   // 看向大概头部的位置 (假设头部在 Y=1.2 左右)
+    
+    // 禁用景深 (aperture = 0)，确保在调试阶段全图清晰
     cam = Camera(lookfrom, lookat, glm::vec3(0,1,0), 30.0f, aspect, 0.0f, 10.0f);
 }

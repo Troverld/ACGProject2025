@@ -328,7 +328,9 @@ private:
     std::vector<const Object*> find_specular_targets(const Scene& scene) {
         std::vector<const Object*> targets;
         for (const auto& obj : scene.objects) {
-            if (obj->get_material()->is_specular()) {
+            auto mat = obj->get_material();
+            if(!mat) continue; // Meshes do not have global material, in this case definitely not specular
+            if (mat->is_specular()) {
                 targets.push_back(obj.get());
             }
         }

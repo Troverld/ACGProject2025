@@ -64,7 +64,7 @@ RenderConfig get_default_config() {
 // 6: Chromatic Dispersion (New)
 // 7: Prism Spectrum (New)
 // ==========================
-const int SCENE_ID = 2;
+const int SCENE_ID = 7;
 
 void save_snapshot(int current_samples, int width, int height, const std::vector<glm::vec3>& accum_buffer) {
     std::vector<unsigned char> image_output(width * height * 3);
@@ -125,13 +125,14 @@ int main() {
         case 6: scene_dispersion(world, cam, config.aspect_ratio); break;
         case 7:
             config.use_photon_mapping = true;
-            config.num_photons = 100000000;
+            config.num_photons = 5000000;
             config.caustic_radius = 0.3f;
             config.global_radius = 0.4f;
             config.k_nearest = 100;
             config.final_gather_bound = 5;
             scene_prism_spectrum(world, cam, config.aspect_ratio);
             break;
+        case 8: scene_newton_test(world, cam, config.aspect_ratio); break;
         default: scene_materials_textures(world, cam, config.aspect_ratio); break;
     }
 

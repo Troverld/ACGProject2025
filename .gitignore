@@ -50,6 +50,8 @@ __pycache__/
 !assets/**/*.tga
 !assets/**/*.obj
 
+newton.obj
+
 # --- AI Context ---
 # 忽略脚本生成的代码汇总文件
 project_code_context.txt
