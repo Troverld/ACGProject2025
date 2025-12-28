@@ -26,7 +26,7 @@ public:
         glm::vec3 scattered_dir = reflected + fuzz * random_in_unit_sphere();
         if (near_zero(scattered_dir))
             scattered_dir = reflected;
-        srec.specular_ray = Ray(rec.p, scattered_dir, r_in.time());
+        srec.specular_ray = Ray(rec.p, scattered_dir, r_in.time(), r_in.get_wavelength());
         srec.pdf = 0.0f; // PDF of mirror reflection is meaningless.
 
         return (glm::dot(srec.specular_ray.direction(), rec.normal) > 0);

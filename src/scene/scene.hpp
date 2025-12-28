@@ -126,7 +126,7 @@ public:
                 if(near_zero(throughput)) return glm::vec3(0.0f);
                 
                 // Move the ray forward past the object
-                current_ray = Ray(rec.p, current_ray.direction(), current_ray.time());
+                current_ray = Ray(rec.p, current_ray.direction(), current_ray.time(), current_ray.get_wavelength());
                 remaining_dist -= rec.t;
             } else {
                 // Hit an opaque object (occluder). Shadow is black.

@@ -100,7 +100,7 @@ protected:
 
         if (light_pdf <= EPSILON || near_zero(L_emitted)) return glm::vec3(0.0f);
 
-        Ray shadow_ray(rec.p, to_light, current_ray.time());
+        Ray shadow_ray(rec.p, to_light, current_ray.time(), current_ray.get_wavelength());
         
         glm::vec3 f_r = rec.mat_ptr->eval(current_ray, rec, shadow_ray, srec.shading_normal);
         

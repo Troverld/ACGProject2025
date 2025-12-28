@@ -47,7 +47,7 @@ public:
             direction = glm::refract(unit_direction, rec.normal, refraction_ratio);
         }
         
-        srec.specular_ray = Ray(rec.p, direction, r_in.time());
+        srec.specular_ray = Ray(rec.p, direction, r_in.time(), r_in.get_wavelength());
         return true;
     }
 

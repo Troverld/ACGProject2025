@@ -17,7 +17,7 @@ MANUAL_WHITELIST = {
     # "emitter.hpp",
     # "glass.hpp",
     # "metal.hpp",
-    # "phase_function.hpp",
+    # "isotropic.hpp",
     # "camera.hpp",
     "image_texture.hpp",
     # "integrator_utils.hpp",

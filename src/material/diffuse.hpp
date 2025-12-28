@@ -49,7 +49,7 @@ public:
         glm::vec3 scatter_direction = uvw.local(direction_local);
         
         // 4. Create the ray
-        srec.specular_ray = Ray(rec.p, glm::normalize(scatter_direction), r_in.time());
+        srec.specular_ray = Ray(rec.p, glm::normalize(scatter_direction), r_in.time(), r_in.get_wavelength());
 
         // 5. Calculate PDF
         // For cosine-weighted sampling, p(direction) = cos(theta) / PI.

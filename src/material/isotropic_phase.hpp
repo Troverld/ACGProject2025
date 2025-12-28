@@ -49,7 +49,7 @@ public:
         // Scatter inside the volume: Pick a random point on unit sphere (Directional independent)
         glm::vec3 scattered_dir = random_unit_vector();
         
-        srec.specular_ray = Ray(rec.p, scattered_dir, r_in.time());
+        srec.specular_ray = Ray(rec.p, scattered_dir, r_in.time(), r_in.get_wavelength());
         
         // PDF for uniform sphere sampling is 1 / (4 * PI)
         srec.pdf = 1.0f / (4.0f * PI); 

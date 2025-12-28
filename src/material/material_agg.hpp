@@ -4,5 +4,5 @@
 #include "metal.hpp"
 #include "glass.hpp"
 #include "emitter.hpp"
-#include "phase_function.hpp"
+#include "isotropic_phase.hpp"
 #include "dispersive.hpp"

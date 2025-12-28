@@ -1,7 +1,7 @@
 #pragma once
 
 #include "object_utils.hpp"
-#include "../material/phase_function.hpp"
+#include "../material/isotropic_phase.hpp"
 #include "../texture/texture_utils.hpp"
 #include <iostream>
 

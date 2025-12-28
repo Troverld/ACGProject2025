@@ -94,7 +94,7 @@ MyPathTracer/
 │   │   ├── metal.hpp             // Metal
 │   │   ├── glass.hpp             // Dielectric (折射/反射)
 │   │   ├── emitter.hpp           // DiffuseLight (自发光)
-│   │   └── phase_function.hpp    // Isotropic (体渲染相函数)
+│   │   └── isotropic_phase.hpp    // Isotropic (体渲染相函数)
 │   ├── texture/                  // 纹理
 │   │   ├── texture_utils.hpp     // Texture 基类
 │   │   ├── texture_agg.hpp       // 聚合头文件
