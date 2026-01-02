@@ -319,18 +319,23 @@ void scene_prism_spectrum(Scene& world, Camera& cam, float aspect) {
     world.clear();
 
     // 1. Dark Room (No ambient light)
-    world.set_background(std::make_shared<ImageTexture>("assets/envir/NightSkyHDRI008_1K_HDR.hdr"));
+    world.set_background(std::make_shared<ImageTexture>("assets/envir/NightSkyHDRI008_4K_HDR.hdr"));
 
     // 2. The Projection Screen (The Floor/Table)
     // We make it matte white to catch the rainbow clearly.
     // auto mat_screen = std::make_shared<Lambertian>(glm::vec3(0.8f));
 
-    auto diff_tex = std::make_shared<ImageTexture>("assets/texture/painted_wood/PaintedWood007C_1K-PNG_Color.png");
-    auto norm_tex = std::make_shared<ImageTexture>("assets/texture/painted_wood/PaintedWood007C_1K-PNG_NormalGL.png");
-    auto mat_screen = std::make_shared<Lambertian>(diff_tex, norm_tex);
+    auto desk_diff_tex = std::make_shared<ImageTexture>("assets/texture/painted_wood/PaintedWood007C_1K-PNG_Color.png");
+    auto desk_norm_tex = std::make_shared<ImageTexture>("assets/texture/painted_wood/PaintedWood007C_1K-PNG_NormalGL.png");
+    auto mat_desk = std::make_shared<Lambertian>(desk_diff_tex, desk_norm_tex);
     // A long floor stretching along X to catch the refracted beam
-    world.add(std::make_shared<Triangle>(glm::vec3(-20,-0.5f,-10), glm::vec3(20,-0.5f,-10), glm::vec3(20,-0.5f,10), mat_screen)); 
-    world.add(std::make_shared<Triangle>(glm::vec3(-20,-0.5f,-10), glm::vec3(20,-0.5f,10), glm::vec3(-20,-0.5f,10), mat_screen));
+    world.add(std::make_shared<Triangle>(glm::vec3(-10,-0.5f,-5), glm::vec3(10,-0.5f,-5), glm::vec3(10,-0.5f,5), mat_desk)); 
+    world.add(std::make_shared<Triangle>(glm::vec3(-10,-0.5f,-5), glm::vec3(10,-0.5f,5), glm::vec3(-10,-0.5f,5), mat_desk));
+    
+    auto ground_diff_tex = std::make_shared<ImageTexture>("assets/texture/rocky_terrain/rocky_terrain_02_diff_1k.png");
+    auto ground_norm_tex = std::make_shared<ImageTexture>("assets/texture/rocky_terrain/rocky_terrain_02_nor_gl_1k.png");
+    auto mat_ground = std::make_shared<Lambertian>(ground_diff_tex, ground_norm_tex);
+    world.add(std::make_shared<Disk>(glm::vec3(0.0f,-5.0f,0.0f), glm::vec3(0.0f, 1.0f, 0.0f), 75.0f, mat_ground)); 
 
     // 3. The Prism Material
     // High dispersion parameters to exaggerate the rainbow spread over a short distance.
@@ -379,22 +384,95 @@ void scene_prism_spectrum(Scene& world, Camera& cam, float aspect) {
     world.add(std::make_shared<Sphere>(glm::vec3(-8.0f, 2.0f, -0.1f), 0.2f, mat_light));
 
     auto newton_mesh = std::make_shared<Mesh>(
-        "assets/model/newton/newton.obj",  // 确保路径正确
-        // mat_plaster,                // 暂时忽略纹理，强制使用白模，专注于几何体测试
+        "assets/model/newton/newton.obj",
         nullptr,
-        glm::vec3(3.0f, 1.0f, -2.5f),// Position (底座中心置于原点)
-        3.0f,                // Scale
-        glm::vec3(0, 1, 0),         // Rotation Axis (绕 Y 轴)
-        0.0f                        // Rotation Angle (根据朝向调整，例如 180.0f)
+        glm::vec3(3.0f, 1.0f, -2.5f),
+        3.0f,
+        glm::vec3(0, 1, 0),
+        0.0f
+    );
+    auto apples_mesh = std::make_shared<MovingMesh>(
+        "assets/model/apples/apples.obj",
+        glm::vec3(2.7f, 3.1f, -2.3f),
+        glm::vec3(2.7f, 2.8f, -2.3f),
+        0.0f, 1.0f,
+        nullptr,
+        1.0f,
+        glm::vec3(0, 1.0f, 0.0f),
+        0.0f
+    );
+    auto tree_mesh = std::make_shared<Mesh>(
+        "assets/model/tree/tree.obj",
+        nullptr,
+        glm::vec3(5.5f, -5.0f, -6.5f),
+        5.0f,
+        glm::vec3(0, 1, 0),
+        0.0f
+    );
+    auto telescope_mesh = std::make_shared<Mesh>(
+        "assets/model/telescope/telescope.obj",
+        nullptr,
+        glm::vec3(-1.0f, -3.0f, -17.0f),
+        0.05f,
+        glm::vec3(0, 1, 0),
+        80.0f
+    );
+    auto scroll_mesh = std::make_shared<Mesh>(
+        "assets/model/scroll/scroll.obj",
+        nullptr,
+        glm::vec3(3.5f, -0.49f, 2.1f),
+        0.35f,
+        glm::vec3(0, 1, 0),
+        100.0f
+    );
+    auto bible_mesh = std::make_shared<Mesh>(
+        "assets/model/bible/bible.obj",
+        nullptr,
+        glm::vec3(0.5f, -0.49f, 3.1f),
+        1.35f,
+        glm::vec3(0, 1, 0),
+        120.0f
+    );
+    auto coinstack_mesh = std::make_shared<Mesh>(
+        "assets/model/coinstack/coinstack.obj",
+        nullptr,
+        glm::vec3(2.1f, -0.49f, -2.3f),
+        3.35f,
+        glm::vec3(0, 1, 0),
+        135.0f
+    );
+    auto inkwell_mesh = std::make_shared<Mesh>(
+        "assets/model/inkwell/inkwell.obj",
+        nullptr,
+        glm::vec3(5.0f, -0.49f, 3.2f),
+        0.7f,
+        glm::vec3(0, 1, 0),
+        10.0f
+    );
+    auto compass_mesh = std::make_shared<Mesh>(
+        "assets/model/compass/compass.obj",
+        nullptr,
+        glm::vec3(4.5f, -0.4f, -2.5f),
+        0.25f,
+        glm::vec3(0, 1, 0),
+        -45.0f
     );
     world.add(newton_mesh);
+    world.add(apples_mesh);
+    world.add(tree_mesh);
+    world.add(scroll_mesh);
+    world.add(telescope_mesh);
+    world.add(bible_mesh);
+    world.add(coinstack_mesh);
+    world.add(inkwell_mesh);
+    world.add(compass_mesh);
 
     // 6. Camera
     // Look from the side to see both the prism and the projected spectrum on the floor.
-    glm::vec3 lookfrom(0.0f, 3.0f, 8.0f);
-    glm::vec3 lookat(2.0f, 0.3f, 0.0f); // Look at the area where rainbow lands
+    glm::vec3 lookfrom(0.0f, 5.0f, 12.0f);
+    glm::vec3 lookat(3.0f, 0.3f, -4.0f); // Look at the area where rainbow lands
     
-    cam = Camera(lookfrom, lookat, glm::vec3(0,1,0), 30.0f, aspect, 0.0f, 10.0f);
+    cam = Camera(lookfrom, lookat, glm::vec3(0,1,0), 30.0f, aspect, 0.0f, 10.0f, 0.0f, 1.0f);
 }
 
 
