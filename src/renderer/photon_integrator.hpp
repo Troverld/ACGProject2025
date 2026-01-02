@@ -68,8 +68,6 @@ public:
             return;
         }
 
-        std::cout << "[PhotonIntegrator] Emitting " << num_photons_global << " photons..." << std::endl;
-
         int num_lights = static_cast<int>(scene.lights.size());
         std::vector<int> global_counts(num_lights, 0);
         std::vector<int> caustic_counts(num_lights, 0);
@@ -87,28 +85,53 @@ public:
         int caustic_budget = num_photons_global / 2;
 
         std::vector<const Object*> targets = find_specular_targets(scene);
-        bool has_targets = !targets.empty();
+        size_t num_targets = targets.size();
+        int total_photons_to_emit = 0;
 
         for (int i = 0; i < num_lights; ++i) {
             float pdf = light_distribution->pdf_discrete(i);
             float relative_prob = pdf / sum_local_pdf;
 
             global_counts[i] = static_cast<int>(global_budget * relative_prob);
+            total_photons_to_emit += global_counts[i];
             
-            if (has_targets && global_counts[i] > 0) {
+            if (num_targets > 0 && global_counts[i] > 0) {
                 caustic_counts[i] = static_cast<int>(caustic_budget * relative_prob);
+                if (num_targets > 0) {
+                    int per_target = caustic_counts[i] / static_cast<int>(num_targets);
+                    total_photons_to_emit += per_target * static_cast<int>(num_targets);
+                }
             }
         }
 
+        std::cout << "[PhotonIntegrator] Emitting approx " << total_photons_to_emit << " photons..." << std::endl;
         // Thread-safe temporary storage
         std::vector<Photon> master_caustic_list;
         std::vector<Photon> master_global_list;
         std::mutex list_mutex;
 
+        std::atomic<long long> emitted_counter{0};
+        std::mutex print_mutex; // 防止打印乱码
+        const long long UPDATE_STEP = 1000000;
+
         #pragma omp parallel
         {
             std::vector<Photon> local_caustic;
             std::vector<Photon> local_global;
+            
+            auto update_progress = [&]() {
+                long long current = ++emitted_counter;
+                if (current % UPDATE_STEP == 0 || current == total_photons_to_emit) {
+                    if (print_mutex.try_lock()) {
+                        float percent = (float)current / total_photons_to_emit * 100.0f;
+                        std::cout << "\r[PhotonIntegrator] Progress: " 
+                                << std::fixed << std::setprecision(1) << percent << "% "
+                                << "(" << (current / UPDATE_STEP) << "M / " 
+                                << (total_photons_to_emit / UPDATE_STEP) << "M)" << std::flush;
+                        print_mutex.unlock();
+                    }
+                }
+            };
 
             #pragma omp for schedule(dynamic)
             for (int i = 0; i < num_lights; ++i) {
@@ -117,6 +140,7 @@ public:
                 int n_caustic = caustic_counts[i];
 
                 for (int k = 0; k < n_global; ++k) {
+                    update_progress();
                     // float time = shutter_open + random_float() * (shutter_close - shutter_open);
                     float time = 0.0f;
                     glm::vec3 pos, dir, power;
@@ -128,10 +152,11 @@ public:
                     }
                 }
 
-                if (has_targets && n_caustic > 0) {
+                if (num_targets > 0 && n_caustic > 0) {
                     int per_target = n_caustic / static_cast<int>(targets.size());
                     for (const auto& target : targets) {
                         for (int k = 0; k < per_target; ++k) {
+                            update_progress();
                             glm::vec3 pos, dir, power;
                             // float time = shutter_open + random_float() * (shutter_close - shutter_open);
                             float time = 0.0f;
@@ -151,6 +176,7 @@ public:
                 master_global_list.insert(master_global_list.end(), local_global.begin(), local_global.end());
             }
         }
+        std::cout << std::endl; 
 
         std::cout << "[PhotonIntegrator] Building KD-Trees... (Caustic: " 
                   << master_caustic_list.size() << ", Global: " << master_global_list.size() << ")" << std::endl;

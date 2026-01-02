@@ -6,6 +6,8 @@
 #include <omp.h>
 #include <iomanip>
 #include <sstream>
+#include <atomic>
+#include <mutex>
 
 // External
 #include <glm/glm.hpp>
@@ -47,8 +49,8 @@ struct RenderConfig {
 // 默认配置生成器
 RenderConfig get_default_config() {
     return {
-        800, 16.0f/9.0f,    // width, aspect
-        1000, 100, 10,      // samples, batch, depth
+        1188, 297.0f/210.0f,    // width, aspect
+        5000, 500, 10,      // samples, batch, depth
         false,              // use_photon_mapping
         5000000, 0.1f, 0.4f, 200, 4 // default photon settings
     };
@@ -90,14 +92,14 @@ void save_snapshot(int current_samples, int width, int height, const std::vector
         }
     }
 
-    // Generate filename with zero padding: output_scene_2_samples_0050.png
     std::stringstream ss;
     ss << "output_scene_" << SCENE_ID << "_samples_" << std::setw(4) << std::setfill('0') << current_samples << ".png";
     std::string filename = ss.str();
 
     stbi_write_png(filename.c_str(), width, height, 3, image_output.data(), width * 3);
-    // std::cout << "Saved snapshot: " << filename << std::flush; // Flush to ensure text appears immediately
-    printf("Saved snapshot: %s\r", filename.c_str());
+
+    std::cout << "\r[Snapshot] Saved: " << filename << " (" << width << "x" << height << ")" 
+              << std::string(20, ' ') << std::endl;
 }
 
 int main() {
@@ -124,8 +126,10 @@ int main() {
         case 5: scene_5(world, cam, config.aspect_ratio); break;
         case 6: scene_dispersion(world, cam, config.aspect_ratio); break;
         case 7:
-            config.use_photon_mapping = true;
-            config.num_photons = 5000000;
+            // config.use_photon_mapping = true;
+            config.width = 1782;
+            config.samples_per_batch = 100;
+            config.num_photons = 500000000;
             config.caustic_radius = 0.3f;
             config.global_radius = 0.4f;
             config.k_nearest = 100;
@@ -173,6 +177,10 @@ int main() {
         
         // Determine samples for this batch (handle remainder)
         int current_batch_size = std::min(config.samples_per_batch, config.samples_per_pixel - samples_so_far);
+        std::atomic<int> completed_rows{0};
+        std::mutex print_mutex;
+        int total_rows = height;
+        int bar_width = 50;
 
         // Parallelize pixel loops
         #pragma omp parallel for schedule(dynamic)
@@ -200,7 +208,25 @@ int main() {
                 int index = j * width + i;
                 accumulation_buffer[index] += batch_color;
             }
+            
+            int r = ++completed_rows;
+            if (r % (total_rows / 100 + 1) == 0 || r == total_rows) {
+                if (print_mutex.try_lock()) {
+                    float progress = (float)r / total_rows;
+                    int pos = static_cast<int>(bar_width * progress);
+                    
+                    std::string str = "\r[Snapshot] Converting: [";
+                    for (int k = 0; k < bar_width; ++k) {
+                        if (k < pos) str += "=";
+                        else if (k == pos) str += ">";
+                        else str += " ";
+                    }
+                    std::cout << str << "] " << int(progress * 100.0) << "% " << std::flush;
+                    print_mutex.unlock();
+                }
+            }
         }
+        std :: cout << "\r" << std::flush;
 
         samples_so_far += current_batch_size;
 
