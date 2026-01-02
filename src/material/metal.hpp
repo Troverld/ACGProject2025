@@ -19,7 +19,6 @@ public:
         glm::vec3 reflected = glm::reflect(glm::normalize(r_in.direction()), rec.normal);
         
         // For simplicity, even if fuzz > 0, the distribution is continuous, we still view it as single-point distribution.
-        // TODO: Microfacet GGX
         
         srec.is_specular = true; 
         srec.attenuation = albedo->value(rec.u, rec.v, rec.p);

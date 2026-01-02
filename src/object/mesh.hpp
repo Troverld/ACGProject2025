@@ -8,7 +8,7 @@
 #include <string>
 #include <filesystem>
 #include <glm/gtc/matrix_transform.hpp> 
-#include "../material/diffuse.hpp"
+#include "../material/material_agg.hpp"
 #include "../texture/image_texture.hpp"
 #include "../texture/solid_color.hpp"
 
@@ -159,8 +159,43 @@ private:
                 }
 
                 // C. Construct Lambertian Material
-                // Note: Roughness maps are ignored as requested, treating everything as Diffuse.
-                obj_materials.push_back(std::make_shared<Lambertian>(albedo_tex, normal_tex));
+                // -----------------------------------------------------------
+                // illum 3: Reflection on and Ray trace on -> METAL
+                // illum 5: Reflection: Fresnel on and Ray trace on -> METAL
+                // illum 7: Transparency: Refraction on -> GLASS (Dielectric)
+                // illum 2: Highlight on -> Technically Glossy, often mapped to Diffuse or Metal depending on Ks
+                // -----------------------------------------------------------
+                int illum = m.illum;
+                float ni = m.ior;       // Index of Refraction (usually 1.0 for air, 1.45+ for glass)
+                float ns = m.shininess; // Shininess (0 - 1000)
+
+                bool is_metal = (illum == 3 || illum == 5);
+                
+                float avg_specular = (m.specular[0] + m.specular[1] + m.specular[2]) / 3.0f;
+                if (!is_metal && illum == 2 && avg_specular > 0.5f) {
+                    is_metal = true;
+                }
+
+                bool is_glass = (illum == 6 || illum == 7 || (illum >= 4 && std::abs(ni - 1.0f) > 0.001f));
+
+                if (is_glass) {
+                    glm::vec3 glass_color(m.diffuse[0], m.diffuse[1], m.diffuse[2]);
+                    if (glm::length(glass_color) < 0.01f) {
+                         glm::vec3 tf(m.transmittance[0], m.transmittance[1], m.transmittance[2]);
+                         if (glm::length(tf) > 0.01f) glass_color = tf;
+                         else glass_color = glm::vec3(1.0f);
+                    }
+                    obj_materials.push_back(std::make_shared<Dielectric>(glass_color, ni));
+                } 
+                else if (is_metal) {
+                    float fuzz = 1.0f - (ns / 1000.0f);
+                    fuzz = std::max(0.0f, std::min(fuzz, 1.0f)); // Clamp to [0,1]
+                    
+                    obj_materials.push_back(std::make_shared<Metal>(albedo_tex, fuzz));
+                } 
+                else {
+                    obj_materials.push_back(std::make_shared<Lambertian>(albedo_tex, normal_tex));
+                }
             }
         }
 
