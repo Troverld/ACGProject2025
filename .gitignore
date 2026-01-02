@@ -42,6 +42,8 @@ __pycache__/
 *.bmp
 *.tga
 
+!output_scene_7_samples_4900.png
+
 !assets/**/*.png
 !assets/**/*.jpg
 !assets/**/*.jpeg
