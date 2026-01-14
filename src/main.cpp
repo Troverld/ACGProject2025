@@ -92,10 +92,10 @@ void draw_progress_bar(int current, int total, int batch_idx, int active_px) {
 
 std::string generate_filename(int scene_id, bool is_heatmap, const std::string& method, int spp, bool is_latest) {
     std::stringstream ss;
-    // scene_[num]_[heatmap/output]_[PT/PM]_samples_[SPP].png
+    // scene_[num]_[PT/PM]_[heatmap/output]_samples_[SPP].png
     ss << "scene_" << scene_id << "_"
-       << (is_heatmap ? "heatmap" : "output") << "_"
-       << method << "_samples_";
+       << method << "_"
+       << (is_heatmap ? "heatmap" : "output") << "_samples_";
     
     if (is_latest) {
         ss << "latest";

@@ -42,7 +42,10 @@ __pycache__/
 *.bmp
 *.tga
 
-!output_scene_7_samples_4900.png
+!scene_7_PM_heatmap_samples_00200.png
+!scene_7_PM_heatmap_samples_00400.png
+!scene_7_PM_heatmap_samples_00800.png
+!scene_7_PM_heatmap_samples_01600.png
 
 !assets/**/*.png
 !assets/**/*.jpg
