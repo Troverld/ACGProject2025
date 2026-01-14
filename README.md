@@ -77,4 +77,6 @@ MyPathTracer/
     └── scene_list.cpp            // 场景预设 (硬编码的测试场景定义)
 ```
 
-调用命令 `cmake --build .` 后，即可生成 `bin/MyPathTracer.exe`，直接运行即可开始渲染。
+运行方法：
+
+在主目录下新建 `build` 文件夹后，在其中调用命令 `cmake --build .`，即可生成 `bin/MyPathTracer.exe`，直接运行即可开始渲染。推荐启用 `Release` 模式，否则渲染会非常慢。
