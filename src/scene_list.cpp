@@ -87,7 +87,7 @@ void scene_cornell_smoke_caustics(Scene& world, Camera& cam, float aspect) {
     world.add(std::make_shared<Triangle>(glm::vec3(213.0f,554.0f,227.0f), glm::vec3(343.0f,554.0f,227.0f), glm::vec3(343.0f,554.0f,332.0f), light));
     world.add(std::make_shared<Triangle>(glm::vec3(213.0f,554.0f,227.0f), glm::vec3(343.0f,554.0f,332.0f), glm::vec3(213.0f,554.0f,332.0f), light));
 
-    world.add_light(std::make_shared<PointLight>(glm::vec3(120.0f,239.0f,127.0f), glm::vec3(4e3f, 8e3f, 1e3f)));
+    // world.add_light(std::make_shared<PointLight>(glm::vec3(120.0f,239.0f,127.0f), glm::vec3(4e3f, 8e3f, 1e3f)));
 
     // Glass Sphere for Caustics
     world.add(std::make_shared<Sphere>(glm::vec3(190.0f, 90.0f, 190.0f), 90.0f, glass));
@@ -381,7 +381,25 @@ void scene_prism_spectrum(Scene& world, Camera& cam, float aspect) {
     
     // Position: Left (-X), Up (+Y).
     // The angle is crucial. We want roughly 45-60 degrees incidence to maximize dispersion width.
-    world.add(std::make_shared<Sphere>(glm::vec3(-8.0f, 2.0f, -0.1f), 0.2f, mat_light));
+    // world.add(std::make_shared<Sphere>(glm::vec3(-8.0f, 2.0f, -0.1f), 0.2f, mat_light));
+    glm::vec3 lightCenter(-10.0f, 1.8f, 0.1f);
+    glm::vec3 prismCenter(0.0f, 1.0f, 0.0f);
+    
+    glm::vec3 forward = glm::normalize(prismCenter - lightCenter);
+    
+    glm::vec3 worldUp = (std::abs(forward.y) > 0.9f) ? glm::vec3(0, 0, 1) : glm::vec3(0, 1, 0);
+    
+    glm::vec3 right = glm::normalize(glm::cross(forward, worldUp));
+    glm::vec3 up    = glm::normalize(glm::cross(right, forward));
+    
+    float lightSize = 0.25f;
+    glm::vec3 l_p0 = lightCenter + (up * lightSize);
+    glm::vec3 l_p1 = lightCenter + (up * -0.5f * lightSize) - (right * 0.866f * lightSize);
+    glm::vec3 l_p2 = lightCenter + (up * -0.5f * lightSize) + (right * 0.866f * lightSize);
+
+    auto mat_light_tri = std::make_shared<DiffuseLight>(glm::vec3(5500.0f)); 
+
+    world.add(std::make_shared<Triangle>(l_p0, l_p2, l_p1, mat_light_tri));
 
     auto newton_mesh = std::make_shared<Mesh>(
         "assets/model/newton/newton.obj",
