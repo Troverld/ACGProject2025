@@ -138,13 +138,15 @@ public:
                 const auto& light = scene.lights[i];
                 int n_global = global_counts[i];
                 int n_caustic = caustic_counts[i];
+                int n_total = n_global;
+                if (num_targets > 0 && n_caustic > 0)
+                    n_total += n_caustic / static_cast<int>(targets.size()) * static_cast<int>(targets.size());
 
                 for (int k = 0; k < n_global; ++k) {
                     update_progress();
-                    // float time = shutter_open + random_float() * (shutter_close - shutter_open);
-                    float time = 0.0f;
+                    float time = shutter_open + random_float() * (shutter_close - shutter_open);
                     glm::vec3 pos, dir, power;
-                    light->emit(pos, dir, power, static_cast<float>(n_global)); 
+                    light->emit(pos, dir, power, static_cast<float>(n_total)); 
 
                     if (glm::length(power) > 0.0f) {
                         Ray photon_ray(pos + dir * SHADOW_EPSILON, dir, time); 
@@ -158,9 +160,8 @@ public:
                         for (int k = 0; k < per_target; ++k) {
                             update_progress();
                             glm::vec3 pos, dir, power;
-                            // float time = shutter_open + random_float() * (shutter_close - shutter_open);
-                            float time = 0.0f;
-                            if (light->emit_targeted(pos, dir, power, (float)per_target, *target)
+                            float time = shutter_open + random_float() * (shutter_close - shutter_open);
+                            if (light->emit_targeted(pos, dir, power, (float)n_total, *target)
                                 && glm::length(power) > 0.0f) {
                                     Ray photon_ray(pos + dir * SHADOW_EPSILON, dir, time); 
                                     trace_photon(scene, photon_ray, power, local_caustic, local_global);
