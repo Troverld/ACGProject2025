@@ -81,7 +81,9 @@ MyPathTracer/
 
 在主目录下新建 `build` 文件夹后，在其中调用命令 `cmake --build .`，即可生成 `bin/MyPathTracer.exe`，直接运行即可开始渲染。推荐启用 `Release` 模式，否则渲染会非常慢。
 
-项目会按照 `scene_[num]_[PT/PM]_[heatmap/output]_samples_[SPP].png` 命名格式保存 snapshot 文件，保存的快照 SPP 一次翻倍，项目使用了 Adaptive Sampling 技术，因此越往后的 batch 会进行的越快，项目会保存 Heat Map，可以反映出像素的收敛速度，如下图：
+项目会按照 `scene_[num]_[PT/PM]_[heatmap/output]_samples_[SPP].png` 命名格式保存 snapshot 文件，保存的快照 SPP 依次翻倍。项目使用了 Adaptive Sampling 技术，会跳过收敛的像素，因此越往后的 batch 会进行的越快。
+
+项目会保存 Heat Map，可以反映出像素的收敛速度，如下图：
 
 <p align="center">
   <img src="scene_7_PM_heatmap_samples_00200.png" width="24%" />
