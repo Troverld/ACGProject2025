@@ -12,7 +12,7 @@
 
 项目的主视觉图如下：
 
-![](mainview.png)
+![](images/mainview.png)
 
 项目的代码架构如下：
 
@@ -79,15 +79,17 @@ MyPathTracer/
 
 运行方法：
 
-在主目录下新建 `build` 文件夹后，在其中调用命令 `cmake --build .`，即可生成 `bin/MyPathTracer.exe`，直接运行即可开始渲染。推荐启用 `Release` 模式，否则渲染会非常慢。
+**因为 github 的文件大小限制，有一个过大的 .obj 文件无法直接上传，在运行前请务必解压 `assets/model/newton/newton.zip` 以获取 `newton.obj` 并置于同一个文件夹下。**
+
+在主目录下新建 `build` 文件夹后，在其中调用命令 `cmake --build .`，即可生成 `bin/MyPathTracer.exe`，直接运行即可开始渲染。推荐启用 `Release` 模式（也即使用命令 `cmake --build . --config Release`），否则渲染会非常慢。
 
 项目会按照 `scene_[num]_[PT/PM]_[heatmap/output]_samples_[SPP].png` 命名格式保存 snapshot 文件，保存的快照 SPP 依次翻倍。项目使用了 Adaptive Sampling 技术，会跳过收敛的像素，因此越往后的 batch 会进行的越快。
 
 项目会保存 Heat Map，可以反映出像素的收敛速度，如下图：
 
 <p align="center">
-  <img src="scene_7_PM_heatmap_samples_00200.png" width="24%" />
-  <img src="scene_7_PM_heatmap_samples_00400.png" width="24%" />
-  <img src="scene_7_PM_heatmap_samples_00800.png" width="24%" />
-  <img src="scene_7_PM_heatmap_samples_01600.png" width="24%" />
+  <img src="images/scene_7_PM_heatmap_samples_00200.png" width="24%" />
+  <img src="images/scene_7_PM_heatmap_samples_00400.png" width="24%" />
+  <img src="images/scene_7_PM_heatmap_samples_00800.png" width="24%" />
+  <img src="images/scene_7_PM_heatmap_samples_01600.png" width="24%" />
 </p>
